@@ -1,0 +1,67 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A team member with a specific role and skill set.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "email": { "type": "string", "format": "email" },
+        "fullName": { "type": "string" },
+        "userId": { "type": "string", "description": "Custom user identifier" },
+        "role": { "type": "string", "enum": ["Front-End Developer", "Back-End Developer", "Full-Stack Developer", "Mobile App Developer", "DevOps Engineer", "QA Engineer (Tester)", "UI/UX Designer", "Data Scientist", "Data Analyst", "Data Engineer", "Business Intelligence (BI) Analyst", "Machine Learning Engineer", "AI Specialist", "Admin"] },
+        "skills": { "type": "array", "items": { "type": "string" } },
+        "activeTasksCount": { "type": "number", "description": "Number of currently assigned tasks" }
+      },
+      "required": ["uid", "email", "fullName", "role", "skills"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "A high-level project requirement.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "priority": { "type": "string", "enum": ["Low", "Medium", "High"] },
+        "deadline": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["pending", "inprogress", "done"] },
+        "createdBy": { "type": "string", "description": "Admin UID" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "description", "priority", "status", "createdBy"]
+    },
+    "SubTask": {
+      "title": "SubTask",
+      "description": "A granular unit of work derived from a Task.",
+      "type": "object",
+      "properties": {
+        "taskId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "assignedTo": { "type": "string", "description": "User UID" },
+        "assignedToName": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "inprogress", "hold", "done"] },
+        "skillsRequired": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["taskId", "title", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "User",
+      "description": "User profiles and roles"
+    },
+    "/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "Main tasks created by admins"
+    },
+    "/subtasks/{subTaskId}": {
+      "schema": "SubTask",
+      "description": "Subtasks assigned to users"
+    },
+    "/settings/{settingId}": {
+      "schema": "object",
+      "description": "Global application settings like role capacity limits"
+    }
+  }
+}

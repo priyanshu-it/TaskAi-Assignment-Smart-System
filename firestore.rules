@@ -1,0 +1,70 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin' ||
+         request.auth.token.email == 'developed45@gmail.com');
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'fullName', 'role', 'skills']) &&
+             data.email is string &&
+             data.fullName is string && data.fullName.size() < 100 &&
+             data.role is string &&
+             data.skills is list;
+    }
+
+    function isValidTask(data) {
+      return data.keys().hasAll(['title', 'description', 'priority', 'status', 'createdBy']) &&
+             data.title is string && data.title.size() < 200 &&
+             data.status in ['pending', 'inprogress', 'done'];
+    }
+
+    function isValidSubTask(data) {
+      return data.keys().hasAll(['taskId', 'title', 'status', 'assignedTo']) &&
+             data.title is string && data.title.size() < 200 &&
+             data.status in ['pending', 'inprogress', 'hold', 'done'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{uid} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdmin() && isValidUser(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /tasks/{taskId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdmin() && isValidTask(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /subtasks/{subTaskId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin() && isValidSubTask(request.resource.data);
+      allow update: if isAuthenticated() && (isAdmin() || (request.auth.token.email == resource.data.assignedTo && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])));
+      allow delete: if isAdmin();
+    }
+
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+  }
+}
