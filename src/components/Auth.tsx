@@ -57,18 +57,18 @@ export default function Auth() {
       // Find user by both email AND userId in Firestore to ensure they match a registered record
       const usersRef = collection(db, 'users');
       const q = query(
-        usersRef, 
+        usersRef,
         where('email', '==', email),
         where('userId', '==', userId)
       );
       const querySnapshot = await getDocs(q);
-      
+
       const userDoc = querySnapshot.docs[0];
 
       if (userDoc) {
         const userData = userDoc.data();
         const userEmail = userData.email;
-        
+
         try {
           // Try to sign in with default password
           await signInWithEmailAndPassword(auth, userEmail, 'password123');
@@ -78,7 +78,7 @@ export default function Auth() {
             try {
               const userCredential = await createUserWithEmailAndPassword(auth, userEmail, 'password123');
               const newUid = userCredential.user.uid;
-              
+
               // If the UID changed (which it will, since admin used a random tempUid), 
               // we need to migrate the Firestore document to the new Auth UID
               if (newUid !== userDoc.id) {
@@ -99,7 +99,7 @@ export default function Auth() {
           }
         }
       } else {
-        setError('No registered employer found with these credentials. Please contact Admin.');
+        setError('No registered user found with these credentials. Please contact Admin.');
       }
     } catch (err: any) {
       console.error('Login error:', err);
@@ -110,121 +110,129 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center p-4 font-sans">
-      <div className="mb-8 text-center">
-        <h1 className="text-4xl font-black text-blue-600 tracking-tighter mb-2 font-display">TASK-AI</h1>
-        <p className="text-slate-500 font-medium uppercase tracking-widest text-xs">Smart Assignment Portal</p>
-      </div>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 font-sans bg-cover bg-center relative"
+      style={{
+        backgroundImage: "url('https://static.vecteezy.com/system/resources/thumbnails/004/999/427/small/concept-of-working-at-home-business-desk-office-set-collection-realistic-isolated-on-white-background-flat-illustration-flat-lay-free-vector.jpg')"
+      }}
+    >
+      <div className="absolute inset-0 bg-white/40"></div>
+      <div className="relative z-10">
+        {/* your content */}
 
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl shadow-blue-100/50 border border-slate-200 overflow-hidden">
-        <div className="flex p-4 bg-slate-50/50">
-          <button
-            onClick={() => setIsAdmin(true)}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-all",
-              isAdmin ? "bg-blue-50 shadow-sm text-blue-600" : "text-slate-500 hover:text-slate-700"
-            )}
-          >
-            <Shield size={18} />
-            Admin
-          </button>
-          <button
-            onClick={() => setIsAdmin(false)}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-all",
-              !isAdmin ? "bg-blue-50 shadow-sm text-blue-600" : "text-slate-500 hover:text-slate-700"
-            )}
-          >
-            <UserIcon size={18} />
-            Employer
-          </button>
+        <div className="mb-8 text-center">
+          <h1 className="text-4xl font-black text-blue-600 tracking-tighter mb-2 font-display">TASK-AI</h1>
+          <p className="text-slate-500 font-medium uppercase tracking-widest text-xs">Smart Assignment Portal</p>
         </div>
 
-        <hr className="border-slate-300" />
-
-        <div className="p-8">
-          <form onSubmit={isAdmin ? handleAdminLogin : handleUserLogin} className="space-gap-6 flex flex-col gap-6">
-            {isAdmin ? (
-              <>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Admin Email</label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="admin@example.com"
-                      className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Password</label>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                      required
-                    />
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Email Address</label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="your@email.com"
-                      className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">User ID</label>
-                  <div className="relative">
-                    <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                    <input
-                      type="text"
-                      value={userId}
-                      onChange={(e) => setUserId(e.target.value)}
-                      placeholder="Enter your registered User ID"
-                      className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                      required
-                    />
-                  </div>
-                </div>
-              </>
-            )}
-
-            {error && <p className="text-red-500 text-xs font-medium bg-red-50 p-3 rounded-xl border border-red-100">{error}</p>}
-
+        <div className="w-full max-w-md bg-white rounded-3xl shadow-xl shadow-blue-100/50 border border-slate-300 overflow-hidden">
+          <div className="flex p-4 bg-slate-50/50">
             <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold tracking-wide shadow-lg shadow-blue-500/30 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              onClick={() => setIsAdmin(true)}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-all",
+                isAdmin ? "bg-blue-50 shadow-sm text-blue-600" : "text-slate-500 hover:text-slate-700"
+              )}
             >
-              {loading ? <Loader2 className="animate-spin" size={20} /> : `LOG IN AS ${isAdmin ? 'ADMIN' : 'EMPLOYER'}`}
+              <Shield size={18} />
+              Admin
             </button>
-          </form>
+            <button
+              onClick={() => setIsAdmin(false)}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-all",
+                !isAdmin ? "bg-blue-50 shadow-sm text-blue-600" : "text-slate-500 hover:text-slate-700"
+              )}
+            >
+              <UserIcon size={18} />
+              User
+            </button>
+          </div>
 
-          <div className="mt-8 text-slate-400 text-xs font-medium uppercase tracking-wider text-center">
-              {isAdmin ? " " : "Employers must be registered by Admin"}
+          <hr className="border-slate-300" />
+
+          <div className="p-8">
+            <form onSubmit={isAdmin ? handleAdminLogin : handleUserLogin} className="space-gap-6 flex flex-col gap-6">
+              {isAdmin ? (
+                <>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Admin Email</label>
+                    <div className="relative">
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="admin@example.com"
+                        className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Password</label>
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                        required
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Email Address</label>
+                    <div className="relative">
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="your@email.com"
+                        className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">User ID</label>
+                    <div className="relative">
+                      <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                      <input
+                        type="text"
+                        value={userId}
+                        onChange={(e) => setUserId(e.target.value)}
+                        placeholder="Enter your User ID"
+                        className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                        required
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {error && <p className="text-red-500 text-xs font-medium bg-red-50 p-3 rounded-xl border border-red-100">{error}</p>}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold tracking-wide shadow-lg shadow-blue-500/30 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {loading ? <Loader2 className="animate-spin" size={20} /> : `LOG IN AS ${isAdmin ? 'ADMIN' : 'USER'}`}
+              </button>
+            </form>
+
+            <div className="mt-6 text-slate-400 text-xs font-medium uppercase tracking-wider text-center">
+              {isAdmin ? "Only the admin Login is accessible" : "User's must be registered by Admin"}
+            </div>
           </div>
         </div>
       </div>
-      
     </div>
   );
 }
