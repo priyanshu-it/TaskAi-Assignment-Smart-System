@@ -124,7 +124,7 @@ export default function Auth() {
           <p className="text-slate-500 font-medium uppercase tracking-widest text-xs">Smart Assignment Portal</p>
         </div>
 
-        <div className="w-full max-w-md bg-white rounded-3xl shadow-xl shadow-blue-100/50 border border-slate-300 overflow-hidden">
+        <div className="w-full max-w-md bg-white rounded-3xl shadow-xl shadow-blue-100/50 border border-slate-400 overflow-hidden">
           <div className="flex p-4 bg-slate-50/50">
             <button
               onClick={() => setIsAdmin(true)}
