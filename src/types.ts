@@ -49,4 +49,5 @@ export interface SubTask {
   assignedToName: string;
   status: SubTaskStatus;
   skillsRequired: string[];
+  deadline: string;
 }
