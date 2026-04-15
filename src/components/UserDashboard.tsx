@@ -3,7 +3,7 @@ import { collection, onSnapshot, query, where, doc, updateDoc, getDocs, collecti
 import { db, auth } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { SubTask, SubTaskStatus } from '../types';
-import { ListChecks, PieChart, Clock, CheckCircle2, LogOut, User as UserIcon, LayoutDashboard, Loader2, AlertCircle, Menu, X } from 'lucide-react';
+import { ListChecks, PieChart, Clock, CheckCircle2, LogOut, User as UserIcon, LayoutDashboard, Loader2, AlertCircle, Menu, X, Calendar } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 export default function UserDashboard() {
@@ -63,6 +63,43 @@ export default function UserDashboard() {
     } catch (err) {
       console.error(err);
     }
+  };
+
+  
+  const getDeadlineInfo = (deadline?: string) => {
+    if (!deadline) return null;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const deadlineDate = new Date(deadline);
+    deadlineDate.setHours(0, 0, 0, 0);
+    
+    const daysRemaining = Math.ceil((deadlineDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    let label = deadline;
+    if (daysRemaining < 0) {
+      label = `Overdue`;
+    } else if (daysRemaining === 0) {
+      label = 'Due Today';
+    } else if (daysRemaining <= 3) {
+      label = `${daysRemaining} days left`;
+    } else if (daysRemaining <= 7) {
+      label = `${daysRemaining} days left`;
+    }
+
+    const colorClass =
+      daysRemaining < 0 ? 'text-red-600 bg-red-50 border-red-200' :
+      daysRemaining === 0 ? 'text-orange-600 bg-orange-50 border-orange-200' :
+      daysRemaining <= 3 ? 'text-amber-600 bg-amber-50 border-amber-200' :
+      daysRemaining <= 7 ? 'text-yellow-600 bg-yellow-50 border-yellow-200' :
+      'text-slate-600 bg-slate-50 border-slate-200';
+
+    return {
+      label,
+      date: deadline,
+      color: colorClass
+    };
   };
 
   if (loading) return (
@@ -127,7 +164,7 @@ export default function UserDashboard() {
         </div>
       </aside>
 
-      <main className="flex-1 p-4 lg:p-8 overflow-y-auto lg:mt-0 mt-16">
+            <main className="flex-1 p-4 lg:p-8 overflow-y-auto lg:mt-0 mt-16">
         {activeTab === 'tasks' ? (
           <>
             <header className="mb-8">
@@ -136,12 +173,19 @@ export default function UserDashboard() {
             </header>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
-              <StatCard label="My Tasks" value={new Set(subtasks.map(s => s.taskId)).size} icon={<LayoutDashboard className="text-blue-600" />} />
+              {/* <StatCard label="My Tasks" value={new Set(subtasks.map(s => s.taskId)).size} icon={<LayoutDashboard className="text-blue-600" />} /> */}
               <StatCard label="Total Subtasks" value={subtasks.length} icon={<ListChecks className="text-purple-600" />} />
               <StatCard label="Pending" value={subtasks.filter(s => s.status === 'pending').length} icon={<Clock className="text-orange-600" />} />
               <StatCard label="In Progress" value={subtasks.filter(s => s.status === 'inprogress').length} icon={<Clock className="text-yellow-600" />} />
+              
+              <StatCard label="Deadlines Soon" value={subtasks.filter(s => {
+                const info = getDeadlineInfo(s.deadline);
+                return info && (info.label === 'Due Today' || info.label.endsWith('days left'));
+              }).length} icon={<Calendar className="text-amber-600" />} /> 
+              
               <StatCard label="Hold" value={subtasks.filter(s => s.status === 'hold').length} icon={<Clock className="text-red-600" />} />
-              <StatCard label="Completed" value={subtasks.filter(s => s.status === 'done').length} icon={<CheckCircle2 className="text-emerald-600" />} />   
+              <StatCard label="Completed" value={subtasks.filter(s => s.status === 'done').length} icon={<CheckCircle2 className="text-emerald-600" />} />  
+           
             </div>
               <h1 className="text-2xl lg:text-2xl font-bold text-slate-800 mb-4 tracking-tight"><PieChart size={24} className="inline mb-1 text-slate-600"/> Task or Subtasks Overview</h1>
             {subtasks.length > 0 ? (
@@ -150,7 +194,7 @@ export default function UserDashboard() {
                   <div key={sub.id} className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[9px] font-bold uppercase tracking-wider">
+                        <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[11px] font-bold uppercase tracking-wider">
                           Project: {sub.parentTaskTitle}
                         </span>
                       </div>
@@ -162,6 +206,18 @@ export default function UserDashboard() {
                           <UserIcon size={14} className="text-slate-400" />
                           <span className="text-xs font-medium text-slate-600">{sub.assignedToName}</span>
                         </div>
+                        {sub.deadline && getDeadlineInfo(sub.deadline) && (
+                          <div className={cn(
+                            "flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-medium",
+                            getDeadlineInfo(sub.deadline)!.color
+                          )}>
+                            <Calendar size={14} />
+                            <span>{getDeadlineInfo(sub.deadline)!.date}</span>
+                            {getDeadlineInfo(sub.deadline)!.label !== getDeadlineInfo(sub.deadline)!.date && (
+                              <span className="ml-1">({getDeadlineInfo(sub.deadline)!.label})</span>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex flex-wrap gap-2">
