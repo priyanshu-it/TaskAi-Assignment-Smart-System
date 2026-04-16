@@ -299,7 +299,7 @@ export default function AdminDashboard() {
                                       user.activeTasksCount > 3 && "bg-orange-500",
                                       user.activeTasksCount > 5 && "bg-red-500"
                                     )}
-                                    style={{ width: `${Math.min((user.activeTasksCount / 8) * 100, 100)}%` }}
+                                    style={{ width: `${Math.min((user.activeTasksCount / 6) * 100, 100)}%` }}
                                   />
                                 </div>
                                 <span className="text-[10px] font-bold text-slate-600">{user.activeTasksCount}</span>
