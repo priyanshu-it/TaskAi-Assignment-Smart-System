@@ -4,16 +4,17 @@ import { db, auth } from '../firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { UserProfile, Role, Task, SubTask } from '../types';
 import { ROLE_SLOTS, ALL_SKILLS } from '../constants';
-import { Users, Plus, Trash2, LayoutDashboard, ListChecks, PieChart, LogOut, Loader2, Sparkles, CheckCircle2, Clock, AlertCircle, BarChart3, Menu, X } from 'lucide-react';
+import { Users, Plus, Trash2, LayoutDashboard, ListChecks, PieChart, LogOut, Loader2, Sparkles, CheckCircle2, Clock, AlertCircle, BarChart3, Menu, X, Bell, Pause, Copy } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { breakdownTask } from '../lib/gemini';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'create-task' | 'all-tasks' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'create-task' | 'all-tasks' | 'hold-status' | 'settings'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [subtasks, setSubtasks] = useState<SubTask[]>([]);
   const [roleSlots, setRoleSlots] = useState<Record<string, number>>(ROLE_SLOTS);
   const [loading, setLoading] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
@@ -30,12 +31,15 @@ export default function AdminDashboard() {
     const unsubTasks = onSnapshot(collection(db, 'tasks'), (snapshot) => {
       setTasks(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Task)));
     });
+    const unsubSubtasks = onSnapshot(collection(db, 'subtasks'), (snapshot) => {
+      setSubtasks(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as SubTask)));
+    });
     const unsubSettings = onSnapshot(doc(db, 'settings', 'role_slots'), (doc) => {
       if (doc.exists()) {
         setRoleSlots(doc.data() as Record<string, number>);
       }
     });
-    return () => { unsubUsers(); unsubTasks(); unsubSettings(); };
+    return () => { unsubUsers(); unsubTasks(); unsubSubtasks(); unsubSettings(); };
   }, []);
 
   const handleAddUser = async (e: React.FormEvent) => {
@@ -173,6 +177,25 @@ export default function AdminDashboard() {
     return roleSlots[role] || (ROLE_SLOTS as any)[role] || 5;
   };
 
+  const generateUserId = (email: string, fullName: string) => {
+    if (!email || !fullName) return '';
+    const emailPart = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+    const namePart = fullName
+      .split(' ')
+      .map((n) => n.charAt(0).toLowerCase())
+      .join('')
+      .replace(/[^a-z]/g, '');
+    const randomSuffix = Math.floor(Math.random() * 900) + 100;
+    return `${emailPart}_${namePart}_${randomSuffix}`;
+  };
+
+  useEffect(() => {
+    if (newUser.email || newUser.fullName) {
+      const generatedId = generateUserId(newUser.email, newUser.fullName);
+      setNewUser(prev => ({ ...prev, userId: generatedId }));
+    }
+  }, [newUser.email, newUser.fullName]);
+
   return (
     <div className="flex min-h-screen bg-[#f8fafc] text-slate-900 font-sans relative">
       {/* Mobile Header */}
@@ -218,9 +241,10 @@ export default function AdminDashboard() {
 
         <nav className="flex-1 p-4 space-y-2 lg:mt-0 mt-16">
           <SidebarItem icon={<LayoutDashboard size={20} />} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => { setActiveTab('dashboard'); setIsSidebarOpen(false); }} />
-          <SidebarItem icon={<Users size={20} />} label="Create User" active={activeTab === 'users'} onClick={() => { setActiveTab('users'); setIsSidebarOpen(false); }} />
-          <SidebarItem icon={<ListChecks size={20} />} label="Tasks Status" active={activeTab === 'all-tasks'} onClick={() => { setActiveTab('all-tasks'); setIsSidebarOpen(false); }} />
+          <SidebarItem icon={<Users size={20} />} label="Create User's" active={activeTab === 'users'} onClick={() => { setActiveTab('users'); setIsSidebarOpen(false); }} />
           <SidebarItem icon={<Plus size={20} />} label="Create Task AI" active={activeTab === 'create-task'} onClick={() => { setActiveTab('create-task'); setIsSidebarOpen(false); }} />
+          <SidebarItem icon={<ListChecks size={20} />} label="Tasks Status" active={activeTab === 'all-tasks'} onClick={() => { setActiveTab('all-tasks'); setIsSidebarOpen(false); }} />
+          <SidebarItem icon={<Pause size={20} />} label="Hold Status" active={activeTab === 'hold-status'} onClick={() => { setActiveTab('hold-status'); setIsSidebarOpen(false); }} />
           {/* <SidebarItem icon={<PieChart size={20}/>} label="Edits Slots" active={activeTab === 'settings'} onClick={() => { setActiveTab('settings'); setIsSidebarOpen(false); }} /> */}
         </nav>
 
@@ -240,6 +264,7 @@ export default function AdminDashboard() {
             {activeTab === 'users' && "User Management"}
             {activeTab === 'create-task' && "Create New Task"}
             {activeTab === 'all-tasks' && "All Tasks"}
+            {activeTab === 'hold-status' && "Hold Status"}
             {activeTab === 'settings' && "Settings"}
           </h1>
           <p className="text-slate-600 text-sm font-medium">
@@ -247,6 +272,7 @@ export default function AdminDashboard() {
             {activeTab === 'users' && "Add and manage team members"}
             {activeTab === 'create-task' && "AI will break it into subtasks and suggest assignments"}
             {activeTab === 'all-tasks' && "View and manage all assigned tasks"}
+            {activeTab === 'hold-status' && "Users with tasks on hold - contact for status"}
             {activeTab === 'settings' && "Manage role capacity and global limits"}
           </p>
         </header>
@@ -262,6 +288,34 @@ export default function AdminDashboard() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-8">
+
+                { /* Pending Hold Tasks Notification */}
+
+                {subtasks.filter(s => s.status === 'hold').length > 0 && (
+                  <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-2xl p-6">
+                    <div className="flex items-start gap-4">
+                      <AlertCircle className="text-orange-600 flex-shrink-0 mt-1" size={24} />
+                      <div>
+                        <h3 className="font-bold text-slate-900 mb-2">Pending Hold Tasks Notification</h3>
+                        <div className="space-y-2 text-sm text-slate-700">
+                          <p>There are <span className="font-bold text-orange-600">{subtasks.filter(s => s.status === 'hold').length}</span> task(s) currently on hold.</p>
+                          <p>Users assigned to these tasks need to be contacted for status updates:</p>
+                          <ul className="list-disc list-inside space-y-1 mt-2">
+                            {Array.from(new Set(subtasks.filter(s => s.status === 'hold').map(s => s.assignedTo))).map(email => {
+                              const user = users.find(u => u.email === email);
+                              return (
+                                <li key={email}>
+                                  <span className="font-semibold">{user?.fullName}</span> - {email} ({subtasks.filter(s => s.assignedTo === email && s.status === 'hold').length} hold task(s))
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Team Overview */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -283,7 +337,7 @@ export default function AdminDashboard() {
                           <tr key={user.uid} className="hover:bg-slate-50 transition-colors">
                             <td className="p-4">
                               <div className="font-bold text-slate-900 text-sm">{user.fullName}</div>
-                              <div className="text-[10px] text-slate-500">{user.email}</div>
+                              <div className="text-[11px] text-slate-600">{user.email}</div>
                             </td>
                             <td className="p-4">
                               <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-bold uppercase tracking-wider">
@@ -297,7 +351,7 @@ export default function AdminDashboard() {
                                     className={cn(
                                       "h-full bg-blue-600",
                                       user.activeTasksCount > 3 && "bg-orange-500",
-                                      user.activeTasksCount > 5 && "bg-red-500"
+                                      user.activeTasksCount > 4 && "bg-red-500"
                                     )}
                                     style={{ width: `${Math.min((user.activeTasksCount / 6) * 100, 100)}%` }}
                                   />
@@ -331,49 +385,6 @@ export default function AdminDashboard() {
                         </button>
                       </div>
                     )}
-                  </div>
-                </div>
-
-                {/* Task Distribution Chart */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    <BarChart3 size={20} className="text-purple-600" />
-                    Task Distribution
-                  </h3>
-                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={[
-                          { name: 'Pending', count: tasks.filter(t => t.status === 'pending').length, color: '#94a3b8' },
-                          { name: 'In Progress', count: tasks.filter(t => t.status === 'inprogress').length, color: '#3b82f6' },
-                          { name: 'Completed', count: tasks.filter(t => t.status === 'done').length, color: '#10b981' },
-                        ]}
-                        margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis
-                          dataKey="name"
-                          axisLine={false}
-                          tickLine={false}
-                          tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
-                          dy={10}
-                        />
-                        <YAxis
-                          axisLine={false}
-                          tickLine={false}
-                          tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
-                        />
-                        <Tooltip
-                          cursor={{ fill: '#f8fafc' }}
-                          contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                        />
-                        <Bar dataKey="count" radius={[6, 6, 0, 0]} barSize={60}>
-                          {[0, 1, 2].map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={['#94a3b8', '#3b82f6', '#10b981'][index]} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
                   </div>
                 </div>
               </div>
@@ -429,7 +440,27 @@ export default function AdminDashboard() {
               <form onSubmit={handleAddUser} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Input label="Full Name" value={newUser.fullName} onChange={v => setNewUser({ ...newUser, fullName: v })} placeholder="John Doe" />
                 <Input label="Email" type="email" value={newUser.email} onChange={v => setNewUser({ ...newUser, email: v })} placeholder="john@example.com" />
-                <Input label="User ID" value={newUser.userId} onChange={v => setNewUser({ ...newUser, userId: v })} placeholder="john_dev_01" />
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">User ID (Auto-Generated)</label>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-500 font-bold flex items-center justify-between cursor-not-allowed">
+                      {newUser.userId || 'Generating...'}
+                    </div>
+                    {newUser.userId && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(newUser.userId);
+                          alert('User ID copied to clipboard!');
+                        }}
+                        className="px-3 py-3 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border border-blue-200 flex items-center gap-1.5"
+                      >
+                        <Copy size={14} />
+                        Copy
+                      </button>
+                    )}
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Role</label>
                   <select
@@ -483,6 +514,7 @@ export default function AdminDashboard() {
                 <thead>
                   <tr className="bg-slate-50">
                     <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">User</th>
+                    <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">User ID</th>
                     <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Role</th>
                     <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Skills</th>
                     <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Tasks</th>
@@ -495,6 +527,22 @@ export default function AdminDashboard() {
                       <td className="p-4">
                         <div className="font-bold text-slate-900">{user.fullName}</div>
                         <div className="text-xs text-slate-500">{user.email}</div>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs text-slate-700 font-bold">{user.userId}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(user.userId);
+                              alert('User ID copied!');
+                            }}
+                            className="p-1 text-slate-400 hover:text-blue-600 transition-colors"
+                            title="Copy User ID"
+                          >
+                            <Copy size={14} />
+                          </button>
+                        </div>
                       </td>
                       <td className="p-4">
                         <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded-md text-[10px] font-bold uppercase tracking-wider border border-blue-200">
@@ -653,6 +701,66 @@ export default function AdminDashboard() {
                 onDeleteSubTask={handleDeleteSubTask}
               />
             ))}
+          </div>
+        )}
+
+        {activeTab === 'hold-status' && (
+          <div className="space-y-6">
+
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-x-auto shadow-sm">
+              <table className="w-full text-left border-collapse min-w-[800px]">
+                <thead>
+                  <tr className="bg-slate-50 text-center">
+                    <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">User Details</th>
+                    <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Hold Tasks</th>
+                    <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Task Details</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {users
+                    .filter(u => u.role !== 'Admin' && subtasks.some(s => s.assignedTo === u.email && s.status === 'hold'))
+                    .map(user => {
+                      const userHoldTasks = subtasks.filter(s => s.assignedTo === user.email && s.status === 'hold');
+                      return (
+                        <tr key={user.uid} className="hover:bg-slate-50 transition-colors">
+                          <td className="p-4">
+                            <div className="font-bold text-slate-800 flex items-center gap-3">
+                              <div className="w-3 h-3 rounded-full bg-orange-500 animate-pulse" />
+                              <div className="space-y-1">
+                                <p className="text-sm">{user.fullName}</p>
+                                <p className="text-xs text-slate-500 font-medium">{user.email}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-4 text-center">
+                            <span className="px-3 py-1.5 bg-orange-50 text-orange-600 rounded-full text-sm font-bold border border-orange-200">
+                              {userHoldTasks.length}
+                            </span>
+                          </td>
+                          <td className="p-4">
+                            <div className="space-y-2">
+                              {userHoldTasks.map(task => (
+                                <div key={task.id} className="text-xs bg-orange-50 border border-orange-200 rounded-lg p-2">
+                                  <div className="font-bold text-slate-900">{task.title}</div>
+                                  <div className="text-slate-600">{task.description}</div>
+                                  <div className="text-orange-600 font-semibold mt-1">Status: On Hold</div>
+                                </div>
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  {users.filter(u => u.role !== 'Admin' && subtasks.some(s => s.assignedTo === u.email && s.status === 'hold')).length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="p-8 text-center text-slate-400 text-sm font-medium italic">
+                        No users with hold status tasks.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </main>
