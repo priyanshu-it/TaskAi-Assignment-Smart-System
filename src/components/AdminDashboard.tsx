@@ -849,7 +849,8 @@ const TaskCard = ({ task, onDelete, onDeleteSubTask }: TaskCardProps) => {
           </div>
           <div className="flex items-center gap-4 text-xs text-slate-500 font-medium">
             <span className="flex items-center gap-1"><Clock size={14} /> Due: {task.deadline}</span>
-            <span className="flex items-center gap-1"><ListChecks size={14} /> {completedCount}/{subtasks.length} subtasks done</span>
+            <span className="flex items-center gap-1">{task.status === 'done' ? <CheckCircle2 size={17} className="text-emerald-500" /> :
+              <ListChecks size={14} />} {completedCount}/{subtasks.length} subtasks done</span>
           </div>
         </div>
         <div className="flex items-center gap-4">
