@@ -298,7 +298,12 @@ export default function UserDashboard() {
                   </div>
                 </div>
               </div>
-
+              
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Professional Role</label>
+              <div className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-blue-900 rounded-xl text-xs font-bold uppercase">
+                {profile?.role}
+              </div>
+              
               <div className="space-y-4">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">My Skills</label>
                 <div className="flex flex-wrap gap-2">
