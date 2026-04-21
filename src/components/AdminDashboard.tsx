@@ -47,9 +47,6 @@ export default function AdminDashboard() {
     setLoading(true);
     try {
       // But the prompt asks for real Firebase.
-
-      // Let's just create the Firestore doc for now to avoid logging out the admin.
-      // In a real production app, you'd use a Cloud Function with Admin SDK.
       const tempUid = Math.random().toString(36).substring(7);
       await setDoc(doc(db, 'users', tempUid), {
         uid: tempUid,
@@ -279,7 +276,7 @@ export default function AdminDashboard() {
 
         {activeTab === 'dashboard' && (
           <div className="space-y-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6">
               <StatCard label="Team Members" value={users.length} icon={<Users className="text-blue-500" />} />
               <StatCard label="Total Tasks" value={tasks.length} icon={<ListChecks className="text-purple-500" />} />
               <StatCard label="In Progress" value={tasks.filter(t => t.status === 'inprogress').length} icon={<Clock className="text-orange-500" />} />
@@ -921,8 +918,7 @@ const TaskCard = ({ task, onDelete, onDeleteSubTask }: TaskCardProps) => {
                   {/* <button 
                     onClick={() => onDeleteSubTask(sub)}
                     className="p-1.5 text-slate-300 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all"
-                    title="Delete Subtask"
-                  >
+                    title="Delete Subtask" >
                     <Trash2 size={14} />
                   </button> */}
                 </div>
