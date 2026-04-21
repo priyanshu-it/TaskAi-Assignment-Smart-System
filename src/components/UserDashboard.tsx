@@ -41,7 +41,7 @@ export default function UserDashboard() {
     try {
       const oldStatus = sub.status;
       await updateDoc(doc(db, 'subtasks', sub.id), { status: newStatus });
-      
+
       // Update user active tasks count
       if (oldStatus !== 'done' && newStatus === 'done') {
         const userQuery = query(collection(db, 'users'), where('email', '==', profile?.email));
@@ -65,18 +65,17 @@ export default function UserDashboard() {
     }
   };
 
-  
   const getDeadlineInfo = (deadline?: string) => {
     if (!deadline) return null;
-    
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const deadlineDate = new Date(deadline);
     deadlineDate.setHours(0, 0, 0, 0);
-    
+
     const daysRemaining = Math.ceil((deadlineDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    
+
     let label = deadline;
     if (daysRemaining < 0) {
       label = `Overdue`;
@@ -90,10 +89,10 @@ export default function UserDashboard() {
 
     const colorClass =
       daysRemaining < 0 ? 'text-red-600 bg-red-50 border-red-200' :
-      daysRemaining === 0 ? 'text-orange-600 bg-orange-50 border-orange-200' :
-      daysRemaining <= 3 ? 'text-amber-600 bg-amber-50 border-amber-200' :
-      daysRemaining <= 7 ? 'text-yellow-600 bg-yellow-50 border-yellow-200' :
-      'text-slate-600 bg-slate-50 border-slate-200';
+        daysRemaining === 0 ? 'text-orange-600 bg-orange-50 border-orange-200' :
+          daysRemaining <= 3 ? 'text-amber-600 bg-amber-50 border-amber-200' :
+            daysRemaining <= 7 ? 'text-yellow-600 bg-yellow-50 border-yellow-200' :
+              'text-slate-600 bg-slate-50 border-slate-200';
 
     return {
       label,
@@ -114,10 +113,10 @@ export default function UserDashboard() {
       <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 z-40">
         <h2 className="text-xl font-black text-blue-600 tracking-tighter flex items-center gap-2">
           Task<span className="text-slate-900">AI</span>
-          <br/>
-           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Smart Assignment</span>
+          <br />
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Smart Assignment</span>
         </h2>
-        <button 
+        <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           className="p-2 text-slate-600 hover:bg-slate-50 rounded-lg transition-all"
         >
@@ -127,8 +126,7 @@ export default function UserDashboard() {
 
       {/* Sidebar Overlay */}
       {isSidebarOpen && (
-        <div 
-          className="lg:hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40"
+        <div className="lg:hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
@@ -141,19 +139,19 @@ export default function UserDashboard() {
         <div className="p-6 border-b border-slate-200 hidden lg:block">
           <h2 className="text-xl font-black text-blue-600 tracking-tighter flex items-center gap-2">
             Task<span className="text-slate-900">AI</span>
-            <br/>
-           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Smart Assignment</span>
+            <br />
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Smart Assignment</span>
           </h2>
         </div>
-        
+
         <div className="p-6 border-b border-slate-100 lg:mt-0 mt-16">
           <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">User</div>
           <div className="text-sm font-bold text-slate-900 mb-1">{profile?.fullName}</div>
         </div>
 
         <nav className="flex-1 p-4 space-y-2">
-          <SidebarItem icon={<LayoutDashboard size={20}/>} label="My Tasks" active={activeTab === 'tasks'} onClick={() => { setActiveTab('tasks'); setIsSidebarOpen(false); }} />
-          <SidebarItem icon={<UserIcon size={20}/>} label="Profile" active={activeTab === 'profile'} onClick={() => { setActiveTab('profile'); setIsSidebarOpen(false); }} />
+          <SidebarItem icon={<LayoutDashboard size={20} />} label="My Tasks" active={activeTab === 'tasks'} onClick={() => { setActiveTab('tasks'); setIsSidebarOpen(false); }} />
+          <SidebarItem icon={<UserIcon size={20} />} label="Profile" active={activeTab === 'profile'} onClick={() => { setActiveTab('profile'); setIsSidebarOpen(false); }} />
         </nav>
 
         <div className="p-4 border-t border-slate-200">
@@ -164,7 +162,7 @@ export default function UserDashboard() {
         </div>
       </aside>
 
-            <main className="flex-1 p-4 lg:p-8 overflow-y-auto lg:mt-0 mt-16">
+      <main className="flex-1 p-4 lg:p-8 overflow-y-auto lg:mt-0 mt-16">
         {activeTab === 'tasks' ? (
           <>
             <header className="mb-8">
@@ -172,92 +170,155 @@ export default function UserDashboard() {
               <p className="text-slate-600 text-sm font-medium">Your assigned tasks and subtasks</p>
             </header>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
-              {/* <StatCard label="My Tasks" value={new Set(subtasks.map(s => s.taskId)).size} icon={<LayoutDashboard className="text-blue-600" />} /> */}
-              <StatCard label="Total Subtasks" value={subtasks.length} icon={<ListChecks className="text-purple-600" />} />
-              <StatCard label="Pending" value={subtasks.filter(s => s.status === 'pending').length} icon={<Clock className="text-orange-600" />} />
-              <StatCard label="In Progress" value={subtasks.filter(s => s.status === 'inprogress').length} icon={<Clock className="text-yellow-600" />} />
-              
-              <StatCard label="Deadlines Soon" value={subtasks.filter(s => {
-                const info = getDeadlineInfo(s.deadline);
-                return info && (info.label === 'Due Today' || info.label.endsWith('days left'));
-              }).length} icon={<Calendar className="text-amber-600" />} /> 
-              
-              <StatCard label="Hold" value={subtasks.filter(s => s.status === 'hold').length} icon={<Clock className="text-red-600" />} />
-              <StatCard label="Completed" value={subtasks.filter(s => s.status === 'done').length} icon={<CheckCircle2 className="text-emerald-600" />} />  
-           
-            </div>
-              <h1 className="text-2xl lg:text-2xl font-bold text-slate-800 mb-4 tracking-tight"><PieChart size={24} className="inline mb-1 text-slate-600"/> Task or Subtasks Overview</h1>
-            {subtasks.length > 0 ? (
-              <div className="space-y-4">
-                {subtasks.map(sub => (
-                  <div key={sub.id} className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[11px] font-bold uppercase tracking-wider">
-                          Project: {sub.parentTaskTitle}
-                        </span>
-                      </div>
-                      <h3 className="text-lg font-bold text-slate-900 mb-1">{sub.title}</h3>
-                      <p className="text-sm text-slate-600 mb-4">{sub.description}</p>
-                      
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg">
-                          <UserIcon size={14} className="text-slate-400" />
-                          <span className="text-xs font-medium text-slate-600">{sub.assignedToName}</span>
-                        </div>
-                        {sub.deadline && getDeadlineInfo(sub.deadline) && (
-                          <div className={cn(
-                            "flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-medium",
-                            getDeadlineInfo(sub.deadline)!.color
-                          )}>
-                            <Calendar size={14} />
-                            <span>{getDeadlineInfo(sub.deadline)!.date}</span>
-                            {getDeadlineInfo(sub.deadline)!.label !== getDeadlineInfo(sub.deadline)!.date && (
-                              <span className="ml-1">({getDeadlineInfo(sub.deadline)!.label})</span>
-                            )}
-                          </div>
-                        )}
-                      </div>
+            {/* Completion Progress Bar */}
+            {subtasks.length > 0 && (
+              <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-8">
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Task Completion Status</h3>
+                    <span className="text-sm font-bold text-emerald-600">
+                      {Math.round((subtasks.filter(s => s.status === 'done').length / subtasks.length) * 100)}% Complete
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                    <div
+                      className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-full rounded-full transition-all duration-300"
+                      style={{ width: `${(subtasks.filter(s => s.status === 'done').length / subtasks.length) * 100}%` }}
+                    />
+                  </div>
+                </div>
 
-                      <div className="flex flex-wrap gap-2">
-                        {sub.skillsRequired.map(s => (
-                          <span key={s} className="px-2 py-1 bg-blue-50 text-blue-600 rounded-md text-[10px] font-bold uppercase tracking-wider">{s}</span>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-4">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Status</label>
-                        <select 
-                          value={sub.status} 
-                          onChange={(e) => updateStatus(sub, e.target.value as SubTaskStatus)}
-                          className={cn(
-                            "px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer outline-none focus:ring-2 focus:ring-blue-500/20",
-                            sub.status === 'done' ? "text-emerald-600 border-emerald-500/30 bg-emerald-50/30" :
-                            sub.status === 'inprogress' ? "text-blue-600 border-blue-500/30 bg-blue-50/30" :
-                            sub.status === 'hold' ? "text-orange-600 border-orange-500/30 bg-orange-50/30" :
-                            "text-slate-500"
-                          )}
-                        >
-                          {sub.status !== 'done' && (
-                            <>
-                              <option value="pending">Pending</option>
-                              <option value="inprogress">In Progress</option>
-                              <option value="hold">On Hold</option>
-                              <option value="done">Completed</option>
-                            </>
-                          )}
-
-                          {sub.status === 'done' && (
-                            <option value="">Completed</option>
-                          )}
-                        </select>
-                      </div>
+                {/* Status Breakdown */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                  <div className="flex items-center gap-3 p-3 bg-pink-50 rounded-lg border border-slate-100">
+                   <ListChecks className="text-purple-600" />
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total Subtask</div>
+                      <div className="text-lg font-bold text-slate-600">{subtasks.length}</div>
                     </div>
                   </div>
-                ))}
+                  <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg border border-orange-100">
+                    <Clock className="text-orange-600" />
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Pending</div>
+                      <div className="text-lg font-bold text-orange-600">{subtasks.filter(s => s.status === 'pending').length}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                    <Clock className="text-blue-600" />
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">In Progress</div>
+                      <div className="text-lg font-bold text-blue-600">{subtasks.filter(s => s.status === 'inprogress').length}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-red-50 rounded-lg border border-red-100">
+                    <AlertCircle className="text-red-600" />
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">On Hold</div>
+                      <div className="text-lg font-bold text-red-600">{subtasks.filter(s => s.status === 'hold').length}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-lg border border-emerald-100">
+                    <CheckCircle2 className="text-emerald-600" />
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Completed</div>
+                      <div className="text-lg font-bold text-emerald-600">{subtasks.filter(s => s.status === 'done').length}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-amber-50 rounded-lg border border-amber-100">
+                    <Calendar className="text-amber-600" />
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Deadlines Soon</div>
+                      <div className="text-lg font-bold text-amber-600">{subtasks.filter(s => {
+                        const info = getDeadlineInfo(s.deadline);
+                        return info && (info.label === 'Due Today' || info.label.endsWith('days left'));
+                      }).length}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            <h1 className="text-2xl lg:text-2xl font-bold text-slate-800 mb-4 tracking-tight"><PieChart size={24} className="inline mb-1 text-slate-600" /> Task or Subtasks Overview</h1>
+            {subtasks.length > 0 ? (
+              <div className="space-y-4">
+                {subtasks.map(sub => {
+                  const statusConfig = {
+                    pending: { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', dot: 'bg-orange-500', label: 'Pending' },
+                    inprogress: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', dot: 'bg-blue-500', label: 'In Progress' },
+                    hold: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', dot: 'bg-red-500', label: 'On Hold' },
+                    done: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', dot: 'bg-emerald-500', label: 'Completed' }
+                  };
+                  const config = statusConfig[sub.status];
+
+                  return (
+                    <div key={sub.id} className={cn("border rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm hover:shadow-md transition-all", config.bg, config.border, "bg-white border-slate-200")}>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[11px] font-bold uppercase tracking-wider">
+                            Project: {sub.parentTaskTitle}
+                          </span>
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-900 mb-1">{sub.title}</h3>
+                        <p className="text-sm text-slate-600 mb-4">{sub.description}</p>
+
+                        <div className="flex items-center gap-4 mb-4">
+                          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg">
+                            <UserIcon size={14} className="text-slate-400" />
+                            <span className="text-xs font-medium text-slate-600">{sub.assignedToName}</span>
+                          </div>
+                          {sub.deadline && getDeadlineInfo(sub.deadline) && (
+                            <div className={cn(
+                              "flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-medium",
+                              getDeadlineInfo(sub.deadline)!.color
+                            )}>
+                              <Calendar size={14} />
+                              <span>{getDeadlineInfo(sub.deadline)!.date}</span>
+                              {getDeadlineInfo(sub.deadline)!.label !== getDeadlineInfo(sub.deadline)!.date && (
+                                <span className="ml-1">({getDeadlineInfo(sub.deadline)!.label})</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          {sub.skillsRequired.map(s => (
+                            <span key={s} className="px-2 py-1 bg-blue-50 text-blue-600 rounded-md text-[10px] font-bold uppercase tracking-wider">{s}</span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4">
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Status</label>
+                          <select
+                            value={sub.status}
+                            onChange={(e) => updateStatus(sub, e.target.value as SubTaskStatus)}
+                            className={cn(
+                              "px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer outline-none focus:ring-2 focus:ring-blue-500/20",
+                              sub.status === 'done' ? "text-emerald-600 border-emerald-500/30 bg-emerald-50/30" :
+                                sub.status === 'inprogress' ? "text-blue-600 border-blue-500/30 bg-blue-50/30" :
+                                  sub.status === 'hold' ? "text-orange-600 border-orange-500/30 bg-orange-50/30" :
+                                    "text-slate-500"
+                            )}
+                          >
+                            {sub.status !== 'done' && (
+                              <>
+                                <option value="pending">Pending</option>
+                                <option value="inprogress">In Progress</option>
+                                <option value="hold">On Hold</option>
+                                <option value="done">Completed</option>
+                              </>
+                            )}
+
+                            {sub.status === 'done' && (
+                              <option value="">Completed</option>
+                            )}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-slate-400 py-20">
@@ -298,12 +359,12 @@ export default function UserDashboard() {
                   </div>
                 </div>
               </div>
-              
+
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Professional Role</label>
               <div className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-blue-900 rounded-xl text-xs font-bold uppercase">
                 {profile?.role}
               </div>
-              
+
               <div className="space-y-4">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">My Skills</label>
                 <div className="flex flex-wrap gap-2">
@@ -337,15 +398,4 @@ function SidebarItem({ icon, label, active, onClick }: { icon: React.ReactNode, 
     </button>
   );
 }
-
-function StatCard({ label, value, icon }: { label: string, value: number, icon: React.ReactNode }) {
-  return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-      <div className="flex justify-between items-start mb-4">
-        <div className="p-2 bg-slate-50 rounded-lg">{icon}</div>
-      </div>
-      <div className="text-2xl font-black text-slate-900 mb-1">{value}</div>
-      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{label}</div>
-    </div>
-  );
-}
+// <!--line off -->
