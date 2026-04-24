@@ -290,9 +290,14 @@ export default function UserDashboard() {
                       <div className="flex items-center gap-4">
                         <div className="flex flex-col gap-1">
                           <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Status</label>
-                          <select
-                            value={sub.status}
-                            onChange={(e) => updateStatus(sub, e.target.value as SubTaskStatus)}
+                          <select value={sub.status} disabled={sub.status === "done"}
+                            onChange={(e) => {
+                              const value = e.target.value as SubTaskStatus;
+                              if (value === "done") { const confirmed = window.confirm("Sure!, Mark this task as completed?");
+                                if (!confirmed) return;
+                              }
+                              updateStatus(sub, value);
+                            }}
                             className={cn(
                               "px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer outline-none focus:ring-2 focus:ring-blue-500/20",
                               sub.status === 'done' ? "text-emerald-600 border-emerald-500/30 bg-emerald-50/30" :
@@ -301,17 +306,15 @@ export default function UserDashboard() {
                                     "text-slate-500"
                             )}
                           >
-                            {sub.status !== 'done' && (
+                            {sub.status !== "done" ? (
                               <>
                                 <option value="pending">Pending</option>
                                 <option value="inprogress">In Progress</option>
                                 <option value="hold">On Hold</option>
                                 <option value="done">Completed</option>
                               </>
-                            )}
-
-                            {sub.status === 'done' && (
-                              <option value="">Completed</option>
+                            ) : (
+                              <option value="done">Completed</option>
                             )}
                           </select>
                         </div>
@@ -398,4 +401,5 @@ function SidebarItem({ icon, label, active, onClick }: { icon: React.ReactNode, 
     </button>
   );
 }
+
 // <!--line off -->
