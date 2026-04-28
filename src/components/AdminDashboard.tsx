@@ -91,7 +91,8 @@ export default function AdminDashboard() {
           taskId: taskRef.id,
           parentTaskTitle: newTask.title,
           ...sub,
-          status: 'pending'
+          status: 'pending',
+          deadline: newTask.deadline // ADD THIS
         });
 
         // Increment user task count - find user by email
@@ -274,13 +275,38 @@ export default function AdminDashboard() {
           </p>
         </header>
 
+        {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
           <div className="space-y-8">
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6">
-              <StatCard label="Team Members" value={users.length} icon={<Users className="text-blue-500" />} />
-              <StatCard label="Total Tasks" value={tasks.length} icon={<ListChecks className="text-purple-500" />} />
-              <StatCard label="In Progress" value={tasks.filter(t => t.status === 'inprogress').length} icon={<Clock className="text-orange-500" />} />
-              <StatCard label="Completed" value={tasks.filter(t => t.status === 'done').length} icon={<CheckCircle2 className="text-emerald-500" />} />
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 lg:gap-6">
+              <div className="flex items-center gap-3 p-5 bg-white rounded-lg border border-blue-100 overflow-x-auto shadow-lg">
+                <Users className="text-purple-600" />
+                <div>
+                  <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Team Members</div>
+                  <div className="text-lg font-bold text-slate-600">{users.length}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-5 bg-pink-50 rounded-lg border border-orange-100 overflow-x-auto shadow-lg">
+                <ListChecks className="text-orange-600" />
+                <div>
+                  <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Tasks</div>
+                  <div className="text-lg font-bold text-slate-600">{tasks.length}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-5 bg-blue-50 rounded-lg border border-blue-100 overflow-x-auto shadow-lg">
+                <Clock className="text-blue-600" />
+                <div>
+                  <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">In Progress</div>
+                  <div className="text-lg font-bold text-slate-600">{tasks.filter(t => t.status === 'inprogress').length}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-5 bg-emerald-50 rounded-lg border border-emerald-100 overflow-x-auto shadow-lg">
+                <CheckCircle2 className="text-emerald-600" />
+                <div>
+                  <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Completed</div>
+                  <div className="text-lg font-bold text-slate-600">{tasks.filter(t => t.status === 'done').length}</div>
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -404,7 +430,7 @@ export default function AdminDashboard() {
                     const usage = getSlotUsage(role as Role);
                     const percentage = (usage / (limit as number)) * 100;
                     return (
-                      <div key={role} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                      <div key={role} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
                         <div className="flex justify-between items-center mb-2">
                           <h4 className="font-bold text-[10px] text-slate-900 uppercase tracking-tight truncate max-w-[150px]">{role}</h4>
                           <span className="text-[10px] font-mono text-slate-500">{usage}/{limit}</span>
@@ -845,7 +871,7 @@ const TaskCard = ({ task, onDelete, onDeleteSubTask }: TaskCardProps) => {
             </span>
           </div>
           <div className="flex items-center gap-4 text-xs text-slate-500 font-medium">
-            <span className="flex items-center gap-1"><Clock size={14} /> Due: {task.deadline}</span>
+            <span className="flex items-center gap-1"><Clock size={14} /> Due: {new Date(task.deadline).toLocaleDateString('en-GB').replace(/\//g, '-')}</span>
             <span className="flex items-center gap-1">{task.status === 'done' ? <CheckCircle2 size={17} className="text-emerald-500" /> :
               <ListChecks size={14} />} {completedCount}/{subtasks.length} subtasks done</span>
           </div>
@@ -915,8 +941,8 @@ const TaskCard = ({ task, onDelete, onDeleteSubTask }: TaskCardProps) => {
                     {sub.status}
                   </span>
                   <br />
-                  {/* <button 
-                    onClick={() => onDeleteSubTask(sub)}
+
+                  {/* <button onClick={() => onDeleteSubTask(sub)}
                     className="p-1.5 text-slate-300 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all"
                     title="Delete Subtask" >
                     <Trash2 size={14} />
@@ -930,3 +956,5 @@ const TaskCard = ({ task, onDelete, onDeleteSubTask }: TaskCardProps) => {
     </div>
   );
 };
+
+// <!--Line off 960 -->
