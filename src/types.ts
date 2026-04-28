@@ -14,6 +14,7 @@ export type Role =
   | "AI Specialist"
   | "Admin";
 
+
 export interface UserProfile {
   uid: string;
   email: string;
@@ -49,6 +50,5 @@ export interface SubTask {
   assignedToName: string;
   status: SubTaskStatus;
   skillsRequired: string[];
-  deadline: string;
+  deadline?: string; // ISO string (recommended)
 }
-
