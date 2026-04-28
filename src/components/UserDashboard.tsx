@@ -3,7 +3,7 @@ import { collection, onSnapshot, query, where, doc, updateDoc, getDocs, collecti
 import { db, auth } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { SubTask, SubTaskStatus } from '../types';
-import { ListChecks, PieChart, Clock, CheckCircle2, LogOut, User as UserIcon, LayoutDashboard, Loader2, AlertCircle, Menu, X, Calendar } from 'lucide-react';
+import { ListChecks, PieChart, Clock, CheckCircle2, LogOut, User as UserIcon, LayoutDashboard, Loader2, AlertCircle, Menu, X } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 export default function UserDashboard() {
@@ -63,42 +63,6 @@ export default function UserDashboard() {
     } catch (err) {
       console.error(err);
     }
-  };
-
-  const getDeadlineInfo = (deadline?: string) => {
-    if (!deadline) return null;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const deadlineDate = new Date(deadline);
-    deadlineDate.setHours(0, 0, 0, 0);
-
-    const daysRemaining = Math.ceil((deadlineDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-
-    let label = deadline;
-    if (daysRemaining < 0) {
-      label = `Overdue`;
-    } else if (daysRemaining === 0) {
-      label = 'Due Today';
-    } else if (daysRemaining <= 3) {
-      label = `${daysRemaining} days left`;
-    } else if (daysRemaining <= 7) {
-      label = `${daysRemaining} days left`;
-    }
-
-    const colorClass =
-      daysRemaining < 0 ? 'text-red-600 bg-red-50 border-red-200' :
-        daysRemaining === 0 ? 'text-orange-600 bg-orange-50 border-orange-200' :
-          daysRemaining <= 3 ? 'text-amber-600 bg-amber-50 border-amber-200' :
-            daysRemaining <= 7 ? 'text-yellow-600 bg-yellow-50 border-yellow-200' :
-              'text-slate-600 bg-slate-50 border-slate-200';
-
-    return {
-      label,
-      date: deadline,
-      color: colorClass
-    };
   };
 
   if (loading) return (
@@ -189,9 +153,9 @@ export default function UserDashboard() {
                 </div>
 
                 {/* Status Breakdown */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                   <div className="flex items-center gap-3 p-3 bg-pink-50 rounded-lg border border-slate-100">
-                   <ListChecks className="text-purple-600" />
+                    <ListChecks className="text-purple-600" />
                     <div>
                       <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total Subtask</div>
                       <div className="text-lg font-bold text-slate-600">{subtasks.length}</div>
@@ -218,27 +182,24 @@ export default function UserDashboard() {
                       <div className="text-lg font-bold text-red-600">{subtasks.filter(s => s.status === 'hold').length}</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-lg border border-emerald-100">
-                    <CheckCircle2 className="text-emerald-600" />
-                    <div>
-                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Completed</div>
-                      <div className="text-lg font-bold text-emerald-600">{subtasks.filter(s => s.status === 'done').length}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-amber-50 rounded-lg border border-amber-100">
-                    <Calendar className="text-amber-600" />
-                    <div>
-                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Deadlines Soon</div>
-                      <div className="text-lg font-bold text-amber-600">{subtasks.filter(s => {
-                        const info = getDeadlineInfo(s.deadline);
-                        return info && (info.label === 'Due Today' || info.label.endsWith('days left'));
-                      }).length}</div>
-                    </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-lg border border-emerald-100 mt-4">
+                  <CheckCircle2 className="text-emerald-600" />
+                  <div>
+                    <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Completed</div>
+                    <div className="text-lg font-bold text-emerald-600">{subtasks.filter(s => s.status === 'done').length}</div>
                   </div>
                 </div>
               </div>
             )}
-            <h1 className="text-2xl lg:text-2xl font-bold text-slate-800 mb-4 tracking-tight"><PieChart size={24} className="inline mb-1 text-slate-600" /> Task or Subtasks Overview</h1>
+
+            <div className="flex items-center justify-center mb-4">
+              <h1 className="text-2xl lg:text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
+                <PieChart size={26} className="text-slate-600" /> Subtasks Overview
+              </h1>
+            </div>
+
             {subtasks.length > 0 ? (
               <div className="space-y-4">
                 {subtasks.map(sub => {
@@ -261,25 +222,19 @@ export default function UserDashboard() {
                         <h3 className="text-lg font-bold text-slate-900 mb-1">{sub.title}</h3>
                         <p className="text-sm text-slate-600 mb-4">{sub.description}</p>
 
-                        <div className="flex items-center gap-4 mb-4">
-                          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg">
-                            <UserIcon size={14} className="text-slate-400" />
-                            <span className="text-xs font-medium text-slate-600">{sub.assignedToName}</span>
-                          </div>
-                          {sub.deadline && getDeadlineInfo(sub.deadline) && (
-                            <div className={cn(
-                              "flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-medium",
-                              getDeadlineInfo(sub.deadline)!.color
-                            )}>
-                              <Calendar size={14} />
-                              <span>{getDeadlineInfo(sub.deadline)!.date}</span>
-                              {getDeadlineInfo(sub.deadline)!.label !== getDeadlineInfo(sub.deadline)!.date && (
-                                <span className="ml-1">({getDeadlineInfo(sub.deadline)!.label})</span>
-                              )}
-                            </div>
+                        <div className="flex items-center gap-1 px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg">
+                          <UserIcon size={14} className="text-slate-400" />
+                          <span className="text-xs font-medium text-slate-600">{sub.assignedToName}</span>
+                          <br />
+                          {sub.deadline && (
+                            <><Clock size={14} className="text-blue-400" />
+                              <span className="text-xs font-medium text-slate-500">
+                                Deadline: {new Date(sub.deadline).toLocaleDateString('en-GB').replace(/\//g, '-')}
+                              </span>
+                            </>
                           )}
                         </div>
-
+                        <br />
                         <div className="flex flex-wrap gap-2">
                           {sub.skillsRequired.map(s => (
                             <span key={s} className="px-2 py-1 bg-blue-50 text-blue-600 rounded-md text-[10px] font-bold uppercase tracking-wider">{s}</span>
@@ -290,10 +245,11 @@ export default function UserDashboard() {
                       <div className="flex items-center gap-4">
                         <div className="flex flex-col gap-1">
                           <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Status</label>
-                          <select value={sub.status} disabled={sub.status === "done"}
+                          <select value={sub.status}
                             onChange={(e) => {
                               const value = e.target.value as SubTaskStatus;
-                              if (value === "done") { const confirmed = window.confirm("Sure!, Mark this task as completed?");
+                              if (value === "done") {
+                                const confirmed = window.confirm("Mark this task as completed?");
                                 if (!confirmed) return;
                               }
                               updateStatus(sub, value);
@@ -314,7 +270,7 @@ export default function UserDashboard() {
                                 <option value="done">Completed</option>
                               </>
                             ) : (
-                              <option value="done">Completed</option>
+                              <option value="done">"Completed"</option>
                             )}
                           </select>
                         </div>
@@ -401,5 +357,4 @@ function SidebarItem({ icon, label, active, onClick }: { icon: React.ReactNode, 
     </button>
   );
 }
-
-// <!--line off -->
+// <!--line off 360 -->
