@@ -159,7 +159,7 @@ export default function AdminDashboard() {
     setSavingSettings(true);
     try {
       await setDoc(doc(db, 'settings', 'role_slots'), roleSlots);
-      window.location.href = '/Dashboard';
+      window.location.href = '#';
     } catch (err) {
       console.error(err);
     } finally {
