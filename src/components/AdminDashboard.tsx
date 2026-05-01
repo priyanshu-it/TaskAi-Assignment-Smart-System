@@ -8,6 +8,7 @@ import { Users, Plus, Trash2, LayoutDashboard, ListChecks, PieChart, LogOut, Loa
 import { cn } from '../lib/utils';
 import { breakdownTask } from '../lib/gemini';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import UserDashboard from './UserDashboard';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'create-task' | 'all-tasks' | 'hold-status' | 'settings'>('dashboard');
@@ -158,7 +159,7 @@ export default function AdminDashboard() {
     setSavingSettings(true);
     try {
       await setDoc(doc(db, 'settings', 'role_slots'), roleSlots);
-      alert('Settings saved successfully!');
+      window.location.href = '/Dashboard';
     } catch (err) {
       console.error(err);
     } finally {
@@ -675,16 +676,16 @@ export default function AdminDashboard() {
             <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h2 className="text-2xl font-black text-slate-900">Role Capacity Settings</h2>
-                  <p className="text-slate-500 text-sm">Define the maximum number of team members allowed for each role.</p>
+                  <h2 className="text-2xl font-black text-slate-900">Role Capacity</h2>
+                  <p className="text-sm text-slate-600 font-medium">Manage the maximum number of active tasks each role can have.</p>
                 </div>
                 <button
                   onClick={handleUpdateRoleSlots}
                   disabled={savingSettings}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-50"
+                  className="px-3 py-3 bg-blue-500 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all flex items-center gap-1 disabled:opacity-50"
                 >
                   {savingSettings ? <Loader2 className="animate-spin" size={18} /> : <CheckCircle2 size={18} />}
-                  Save Changes
+                  Save
                 </button>
               </div>
 
@@ -941,7 +942,6 @@ const TaskCard = ({ task, onDelete, onDeleteSubTask }: TaskCardProps) => {
                     {sub.status}
                   </span>
                   <br />
-
                   {/* <button onClick={() => onDeleteSubTask(sub)}
                     className="p-1.5 text-slate-300 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all"
                     title="Delete Subtask" >
@@ -957,4 +957,4 @@ const TaskCard = ({ task, onDelete, onDeleteSubTask }: TaskCardProps) => {
   );
 };
 
-// <!--Line off 960 -->
+// <!--Line off -->
