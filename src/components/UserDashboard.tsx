@@ -78,7 +78,7 @@ export default function UserDashboard() {
         <h2 className="text-xl font-black text-blue-600 tracking-tighter flex items-center gap-2">
           Task<span className="text-slate-900">AI</span>
           <br />
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Smart Assignment</span>
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Assignment</span>
         </h2>
         <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -104,7 +104,7 @@ export default function UserDashboard() {
           <h2 className="text-xl font-black text-blue-600 tracking-tighter flex items-center gap-2">
             Task<span className="text-slate-900">AI</span>
             <br />
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Smart Assignment</span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Assignment Smart System</span>
           </h2>
         </div>
 
