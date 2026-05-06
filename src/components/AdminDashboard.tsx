@@ -159,7 +159,7 @@ export default function AdminDashboard() {
     setSavingSettings(true);
     try {
       await setDoc(doc(db, 'settings', 'role_slots'), roleSlots);
-      window.location.href = '#';
+      // code  
     } catch (err) {
       console.error(err);
     } finally {
@@ -202,7 +202,7 @@ export default function AdminDashboard() {
         <h2 className="text-xl font-black text-blue-600 tracking-tighter flex items-center gap-2">
           Task<span className="text-slate-900">AI</span>
           <br />
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Smart Assignment</span>
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Assignment</span>
         </h2>
         <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -229,7 +229,7 @@ export default function AdminDashboard() {
           <h2 className="text-xl font-black text-blue-600 tracking-tighter flex items-center gap-2">
             Task<span className="text-slate-900">AI</span>
             <br />
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Smart Assignment</span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Assignment Smart System</span>
           </h2>
         </div>
 
@@ -501,17 +501,19 @@ export default function AdminDashboard() {
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Skills</label>
                   <div className="flex flex-wrap gap-2">
                     {ALL_SKILLS.map(skill => (
-                      <button
-                        key={skill}
-                        type="button"
-                        onClick={() => {
-                          const skills = newUser.skills.includes(skill)
-                            ? newUser.skills.filter(s => s !== skill)
-                            : [...newUser.skills, skill];
+                      <button key={skill} type="button" onClick={() => {
+                          let skills;
+                          if (newUser.skills.includes(skill)) {
+                            // remove if already selected
+                            skills = newUser.skills.filter(s => s !== skill);
+                          } else {
+                            // limit to 6
+                            if (newUser.skills.length >= 6) return;
+                            skills = [...newUser.skills, skill];
+                          }
                           setNewUser({ ...newUser, skills });
                         }}
-                        className={cn(
-                          "px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border",
+                        className={cn("px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border",
                           newUser.skills.includes(skill)
                             ? "bg-blue-50 border-blue-600 text-blue-600"
                             : "bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300"
