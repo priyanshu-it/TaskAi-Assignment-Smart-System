@@ -121,7 +121,7 @@ export default function Auth() {
 
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-black text-blue-600 tracking-tighter mb-2 font-display">TASK-AI</h1>
-          <p className="text-slate-500 font-medium uppercase tracking-widest text-xs">Smart Assignment Portal</p>
+          <p className="text-slate-500 font-medium uppercase tracking-widest text-xs">Assignment Smart Portal</p>
         </div>
 
         <div className="w-full max-w-md bg-white rounded-3xl shadow-xl shadow-blue-100/50 border border-slate-400 overflow-hidden">
