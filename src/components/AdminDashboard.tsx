@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, addDoc, doc, setDoc, deleteDoc, updateDoc, increment, getDocs, where } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { UserProfile, Role, Task, SubTask } from '../types';
 import { ROLE_SLOTS, ALL_SKILLS } from '../constants';
-import { Users, Plus, Trash2, LayoutDashboard, ListChecks, PieChart, LogOut, Loader2, Sparkles, CheckCircle2, Clock, AlertCircle, BarChart3, Menu, X, Bell, Pause, Copy } from 'lucide-react';
+import { Users, Plus, Trash2, LayoutDashboard, ListChecks, PieChart, LogOut, Loader2, Sparkles, CheckCircle2, Clock, AlertCircle, BarChart3, Menu, X, Bell, Pause, Copy, ArrowBigDown, ArrowBigDownDash, ArrowBigDownDashIcon, ArrowBigLeft, ArrowBigRight, ArrowBigRightDash } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { breakdownTask } from '../lib/gemini';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import UserDashboard from './UserDashboard';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'create-task' | 'all-tasks' | 'hold-status' | 'settings'>('dashboard');
@@ -95,7 +92,6 @@ export default function AdminDashboard() {
           status: 'pending',
           deadline: newTask.deadline // ADD THIS
         });
-
         // Increment user task count - find user by email
         const userQuery = query(collection(db, 'users'), where('email', '==', sub.assignedTo));
         const userSnap = await getDocs(userQuery);
@@ -105,7 +101,6 @@ export default function AdminDashboard() {
           });
         }
       }
-
       setNewTask({ title: '', description: '', priority: 'Medium', deadline: '', skillsRequired: [] });
       setAiBreakdown(null);
       setActiveTab('all-tasks');
@@ -116,23 +111,42 @@ export default function AdminDashboard() {
     }
   };
 
+  const getUserLoad = (email: string) => {
+    return subtasks.filter(
+      s => s.assignedTo === email && s.status !== 'done'
+    ).length;
+  };
+
   const handleDeleteTask = async (taskId: string) => {
     try {
-      // Delete subtasks
       const subQuery = query(collection(db, 'subtasks'), where('taskId', '==', taskId));
       const subSnap = await getDocs(subQuery);
+
+      // collect user decrement counts
+      const userMap: Record<string, number> = {};
       for (const d of subSnap.docs) {
-        const subData = d.data();
-        // Decrement user task count
-        const userQuery = query(collection(db, 'users'), where('email', '==', subData.assignedTo));
+        const sub = d.data();
+        if (sub.assignedTo) {
+          userMap[sub.assignedTo] = (userMap[sub.assignedTo] || 0) + 1;
+        }
+      }
+
+      // update users once per email
+      for (const email in userMap) {
+        const userQuery = query(collection(db, 'users'), where('email', '==', email));
         const userSnap = await getDocs(userQuery);
+
         if (!userSnap.empty) {
           await updateDoc(doc(db, 'users', userSnap.docs[0].id), {
-            activeTasksCount: increment(-1)
+            activeTasksCount: increment(-userMap[email])
           });
         }
-        await deleteDoc(doc(db, 'subtasks', d.id));
       }
+      // delete subtasks
+      await Promise.all(
+        subSnap.docs.map(d => deleteDoc(doc(db, 'subtasks', d.id)))
+      );
+      // delete main task
       await deleteDoc(doc(db, 'tasks', taskId));
     } catch (err) {
       console.error(err);
@@ -141,15 +155,17 @@ export default function AdminDashboard() {
 
   const handleDeleteSubTask = async (sub: SubTask) => {
     try {
-      // Decrement user task count
       const userQuery = query(collection(db, 'users'), where('email', '==', sub.assignedTo));
       const userSnap = await getDocs(userQuery);
+
       if (!userSnap.empty) {
         await updateDoc(doc(db, 'users', userSnap.docs[0].id), {
           activeTasksCount: increment(-1)
         });
       }
+
       await deleteDoc(doc(db, 'subtasks', sub.id));
+
     } catch (err) {
       console.error(err);
     }
@@ -159,11 +175,52 @@ export default function AdminDashboard() {
     setSavingSettings(true);
     try {
       await setDoc(doc(db, 'settings', 'role_slots'), roleSlots);
-      // code  
+      window.location.href = '/Dashboard';
     } catch (err) {
       console.error(err);
     } finally {
       setSavingSettings(false);
+    }
+  };
+
+  const handleExportText = () => {
+    try {
+      let text = `TASK AI EXPORT\n`;
+      text += `Date: ${new Date().toLocaleString()}\n\n`;
+
+      // USERS
+      text += `=== USERS ===\n`;
+      users.forEach((u, i) => {
+        text += `${i + 1}. ${u.fullName} (${u.email})\n`;
+        text += `   Role: ${u.role}\n\n`;
+      });
+
+      // TASKS + SUBTASKS
+      text += `=== TASKS ===\n`;
+      tasks.forEach((t, i) => {
+        const taskSubs = subtasks.filter(s => s.taskId === t.id);
+        text += `${i + 1}. ${t.title}\n`;
+        text += `   Status: ${t.status}\n`;
+        text += `   Priority: ${t.priority}\n`;
+        text += `   Deadline: ${t.deadline}\n`;
+        text += `   Subtasks:\n`;
+        taskSubs.forEach((s, j) => {
+          text += `     ${j + 1}. ${s.title}\n`;
+          text += `        Assigned: ${s.assignedToName}\n`;
+          text += `        Status: ${s.status}\n`;
+        });
+        text += `\n`;
+      });
+
+      const blob = new Blob([text], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `taskai_export_${new Date().toISOString().slice(0, 10)}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Text export failed:', err);
     }
   };
 
@@ -221,8 +278,7 @@ export default function AdminDashboard() {
       )}
 
       {/* Sidebar */}
-      <aside className={cn(
-        "fixed inset-y-0 left-0 w-64 border-r border-slate-200 bg-white flex flex-col z-50 transition-transform duration-300 lg:relative lg:translate-x-0",
+      <aside className={cn("fixed inset-y-0 left-0 w-64 border-r border-slate-200 bg-white flex flex-col z-50 transition-transform duration-300 lg:relative lg:translate-x-0",
         isSidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="p-6 border-b border-slate-200 hidden lg:block">
@@ -275,33 +331,38 @@ export default function AdminDashboard() {
             {activeTab === 'settings' && "Manage role capacity and global limits"}
           </p>
         </header>
+        {activeTab === 'all-tasks' && (<button onClick={handleExportText} className="mb-4 px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-sm font-bold transition-all flex items-center gap-2 shadow-lg shadow-blue-500/20
+        right-8 top-18 absolute cursor-pointer z-10">
+          <BarChart3 size={16} />
+          Export Report
+        </button>)}
 
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
           <div className="space-y-8">
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 lg:gap-6">
-              <div className="flex items-center gap-3 p-5 bg-white rounded-lg border border-blue-100 overflow-x-auto shadow-lg">
+              <div className="flex items-center gap-3 p-5 bg-white rounded-lg border border-blue-100 shadow-sm">
                 <Users className="text-purple-600" />
                 <div>
                   <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Team Members</div>
                   <div className="text-lg font-bold text-slate-600">{users.length}</div>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-5 bg-pink-50 rounded-lg border border-orange-100 overflow-x-auto shadow-lg">
+              <div className="flex items-center gap-3 p-5 bg-pink-50 rounded-lg border border-orange-100 shadow-sm">
                 <ListChecks className="text-orange-600" />
                 <div>
                   <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Tasks</div>
                   <div className="text-lg font-bold text-slate-600">{tasks.length}</div>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-5 bg-blue-50 rounded-lg border border-blue-100 overflow-x-auto shadow-lg">
+              <div className="flex items-center gap-3 p-5 bg-blue-50 rounded-lg border border-blue-100 shadow-sm">
                 <Clock className="text-blue-600" />
                 <div>
                   <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">In Progress</div>
                   <div className="text-lg font-bold text-slate-600">{tasks.filter(t => t.status === 'inprogress').length}</div>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-5 bg-emerald-50 rounded-lg border border-emerald-100 overflow-x-auto shadow-lg">
+              <div className="flex items-center gap-3 p-5 bg-emerald-50 rounded-lg border border-emerald-100 shadow-sm">
                 <CheckCircle2 className="text-emerald-600" />
                 <div>
                   <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Completed</div>
@@ -314,7 +375,6 @@ export default function AdminDashboard() {
               <div className="lg:col-span-2 space-y-8">
 
                 { /* Pending Hold Tasks Notification */}
-
                 {subtasks.filter(s => s.status === 'hold').length > 0 && (
                   <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-2xl p-6">
                     <div className="flex items-start gap-4">
@@ -357,42 +417,51 @@ export default function AdminDashboard() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
-                        {users.filter(u => u.role !== 'Admin').slice(0, 5).map(user => (
-                          <tr key={user.uid} className="hover:bg-slate-50 transition-colors">
-                            <td className="p-4">
-                              <div className="font-bold text-slate-900 text-sm">{user.fullName}</div>
-                              <div className="text-[11px] text-slate-600">{user.email}</div>
-                            </td>
-                            <td className="p-4">
-                              <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-bold uppercase tracking-wider">
-                                {user.role.split(' ')[0]}
-                              </span>
-                            </td>
-                            <td className="p-4">
-                              <div className="flex items-center gap-2">
-                                <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden max-w-[60px]">
-                                  <div
-                                    className={cn(
-                                      "h-full bg-blue-600",
-                                      user.activeTasksCount > 3 && "bg-orange-500",
-                                      user.activeTasksCount > 4 && "bg-red-500"
-                                    )}
-                                    style={{ width: `${Math.min((user.activeTasksCount / 6) * 100, 100)}%` }}
-                                  />
+                        {users.filter(u => u.role !== 'Admin').slice(0, 5).map(user => {
+                          const load = getUserLoad(user.email); // ✅ dynamic load
+
+                          return (
+                            <tr key={user.uid} className="hover:bg-slate-50 transition-colors">
+                              <td className="p-4">
+                                <div className="font-bold text-slate-900 text-sm">{user.fullName}</div>
+                                <div className="text-[11px] text-slate-600">{user.email}</div>
+                              </td>
+
+                              <td className="p-4">
+                                <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-bold uppercase tracking-wider">
+                                  {user.role.split(' ')[0]}
+                                </span>
+                              </td>
+
+                              <td className="p-4">
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden max-w-[60px]">
+                                    <div
+                                      className={cn("h-full bg-blue-600",
+                                        load > 3 && "bg-orange-500",
+                                        load > 4 && "bg-red-500"
+                                      )}
+                                      style={{ width: `${Math.min((load / 6) * 100, 100)}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-[10px] font-bold text-slate-600">{load}</span>
                                 </div>
-                                <span className="text-[10px] font-bold text-slate-600">{user.activeTasksCount}</span>
-                              </div>
-                            </td>
-                            <td className="p-4">
-                              <span className={cn(
-                                "px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider",
-                                user.activeTasksCount === 0 ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"
-                              )}>
-                                {user.activeTasksCount === 0 ? "Available" : "Active"}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
+                              </td>
+
+                              <td className="p-4">
+                                <span
+                                  className={cn("px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider",
+                                    load === 0
+                                      ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"
+                                  )}
+                                >
+                                  {load === 0 ? "Available" : "Active"}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+
                         {users.filter(u => u.role !== 'Admin').length === 0 && (
                           <tr>
                             <td colSpan={4} className="p-8 text-center text-slate-400 text-xs font-medium italic">
@@ -438,8 +507,7 @@ export default function AdminDashboard() {
                         </div>
                         <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                           <div
-                            className={cn(
-                              "h-full transition-all duration-500",
+                            className={cn("h-full transition-all duration-500",
                               percentage > 90 ? "bg-red-500" : percentage > 70 ? "bg-orange-500" : "bg-blue-600"
                             )}
                             style={{ width: `${percentage}%` }}
@@ -471,12 +539,10 @@ export default function AdminDashboard() {
                       {newUser.userId || 'Generating...'}
                     </div>
                     {newUser.userId && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(newUser.userId);
-                          alert('User ID copied to clipboard!');
-                        }}
+                      <button type="button" onClick={() => {
+                        navigator.clipboard.writeText(newUser.userId);
+                        alert('User ID copied to clipboard!');
+                      }}
                         className="px-3 py-3 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border border-blue-200 flex items-center gap-1.5"
                       >
                         <Copy size={14} />
@@ -487,8 +553,7 @@ export default function AdminDashboard() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Role</label>
-                  <select
-                    value={newUser.role}
+                  <select value={newUser.role}
                     onChange={e => setNewUser({ ...newUser, role: e.target.value as Role })}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm text-slate-900"
                   >
@@ -502,21 +567,21 @@ export default function AdminDashboard() {
                   <div className="flex flex-wrap gap-2">
                     {ALL_SKILLS.map(skill => (
                       <button key={skill} type="button" onClick={() => {
-                          let skills;
-                          if (newUser.skills.includes(skill)) {
-                            // remove if already selected
-                            skills = newUser.skills.filter(s => s !== skill);
-                          } else {
-                            // limit to 6
-                            if (newUser.skills.length >= 6) return;
-                            skills = [...newUser.skills, skill];
-                          }
-                          setNewUser({ ...newUser, skills });
-                        }}
-                        className={cn("px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border",
+                        let skills;
+                        if (newUser.skills.includes(skill)) {
+                          // remove if already selected
+                          skills = newUser.skills.filter(s => s !== skill);
+                        } else {
+                          // limit to 6
+                          if (newUser.skills.length >= 6) return;
+                          skills = [...newUser.skills, skill];
+                        }
+                        setNewUser({ ...newUser, skills });
+                      }}
+                        className={cn(
+                          "px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border",
                           newUser.skills.includes(skill)
-                            ? "bg-blue-50 border-blue-600 text-blue-600"
-                            : "bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300"
+                            ? "bg-blue-50 border-blue-600 text-blue-600" : "bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300"
                         )}
                       >
                         {skill}
@@ -557,12 +622,10 @@ export default function AdminDashboard() {
                       <td className="p-4">
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-xs text-slate-700 font-bold">{user.userId}</span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              navigator.clipboard.writeText(user.userId);
-                              alert('User ID copied!');
-                            }}
+                          <button type="button" onClick={() => {
+                            navigator.clipboard.writeText(user.userId);
+                            alert('User ID copied!');
+                          }}
                             className="p-1 text-slate-400 hover:text-blue-600 transition-colors"
                             title="Copy User ID"
                           >
@@ -603,8 +666,7 @@ export default function AdminDashboard() {
               <Input label="Task Title" value={newTask.title} onChange={v => setNewTask({ ...newTask, title: v })} placeholder="e.g., Build user authentication system" />
               <div className="space-y-2">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Description</label>
-                <textarea
-                  value={newTask.description}
+                <textarea value={newTask.description}
                   onChange={e => setNewTask({ ...newTask, description: e.target.value })}
                   placeholder="Describe the task in detail..."
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm min-h-[120px] text-slate-900"
@@ -613,8 +675,7 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Priority</label>
-                  <select
-                    value={newTask.priority}
+                  <select value={newTask.priority}
                     onChange={e => setNewTask({ ...newTask, priority: e.target.value as any })}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm text-slate-900"
                   >
@@ -625,8 +686,7 @@ export default function AdminDashboard() {
                 </div>
                 <Input label="Deadline" type="date" value={newTask.deadline} onChange={v => setNewTask({ ...newTask, deadline: v })} />
               </div>
-              <button
-                onClick={handleAiBreakdown}
+              <button onClick={handleAiBreakdown}
                 disabled={loading || !newTask.title || !newTask.description}
                 className="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white rounded-2xl font-bold tracking-wide shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
@@ -681,9 +741,7 @@ export default function AdminDashboard() {
                   <h2 className="text-2xl font-black text-slate-900">Role Capacity</h2>
                   <p className="text-sm text-slate-600 font-medium">Manage the maximum number of active tasks each role can have.</p>
                 </div>
-                <button
-                  onClick={handleUpdateRoleSlots}
-                  disabled={savingSettings}
+                <button onClick={handleUpdateRoleSlots} disabled={savingSettings}
                   className="px-3 py-3 bg-blue-500 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all flex items-center gap-1 disabled:opacity-50"
                 >
                   {savingSettings ? <Loader2 className="animate-spin" size={18} /> : <CheckCircle2 size={18} />}
@@ -696,18 +754,14 @@ export default function AdminDashboard() {
                   <div key={role} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
                     <span className="text-sm font-bold text-slate-700">{role}</span>
                     <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => setRoleSlots(prev => ({ ...prev, [role]: Math.max(1, (prev[role] || 0) - 1) }))}
+                      <button onClick={() => setRoleSlots(prev => ({ ...prev, [role]: Math.max(1, (prev[role] || 0) - 1) }))}
                         className="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-100"
-                      >
-                        -
+                      > -
                       </button>
                       <span className="w-8 text-center font-mono font-bold text-blue-600">{limit}</span>
-                      <button
-                        onClick={() => setRoleSlots(prev => ({ ...prev, [role]: (prev[role] || 0) + 1 }))}
+                      <button onClick={() => setRoleSlots(prev => ({ ...prev, [role]: (prev[role] || 0) + 1 }))}
                         className="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-100"
-                      >
-                        +
+                      > +
                       </button>
                     </div>
                   </div>
@@ -720,19 +774,13 @@ export default function AdminDashboard() {
         {activeTab === 'all-tasks' && (
           <div className="space-y-6">
             {tasks.map(task => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                onDelete={() => handleDeleteTask(task.id)}
-                onDeleteSubTask={handleDeleteSubTask}
-              />
+              <TaskCard key={task.id} task={task} onDelete={() => handleDeleteTask(task.id)} onDeleteSubTask={handleDeleteSubTask} />
             ))}
           </div>
         )}
 
         {activeTab === 'hold-status' && (
           <div className="space-y-6">
-
             <div className="bg-white border border-slate-200 rounded-2xl overflow-x-auto shadow-sm">
               <table className="w-full text-left border-collapse min-w-[800px]">
                 <thead>
@@ -796,28 +844,12 @@ export default function AdminDashboard() {
 
 function SidebarItem({ icon, label, active, onClick }: { icon: React.ReactNode, label: string, active: boolean, onClick: () => void }) {
   return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm",
-        active ? "bg-blue-50 text-blue-600" : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
-      )}
+    <button onClick={onClick} className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm",
+      active ? "bg-blue-50 text-blue-600" : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+    )}
     >
-      {icon}
-      {label}
+      {icon} {label}
     </button>
-  );
-}
-
-function StatCard({ label, value, icon }: { label: string, value: number, icon: React.ReactNode }) {
-  return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-      <div className="flex justify-between items-start mb-4">
-        <div className="p-2 bg-slate-50 rounded-lg">{icon}</div>
-      </div>
-      <div className="text-2xl font-black text-slate-900 mb-1">{value}</div>
-      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{label}</div>
-    </div>
   );
 }
 
@@ -825,11 +857,7 @@ function Input({ label, type = "text", value, onChange, placeholder }: { label: 
   return (
     <div className="space-y-2">
       <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
+      <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
         className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm text-slate-900"
       />
     </div>
@@ -850,13 +878,43 @@ const TaskCard = ({ task, onDelete, onDeleteSubTask }: TaskCardProps) => {
 
   useEffect(() => {
     const q = query(collection(db, 'subtasks'), where('taskId', '==', task.id));
-    const unsub = onSnapshot(q, (snapshot) => {
-      setSubtasks(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as SubTask)));
+    const unsub = onSnapshot(q, async (snapshot) => {
+      const subs = snapshot.docs.map(d => ({
+        id: d.id,
+        ...d.data()
+      } as SubTask));
+      setSubtasks(subs);
+
+      // ✅ derive status
+      const newStatus = getTaskStatusFromSubtasks(subs);
+
+      // ✅ update only if changed (prevents loop)
+      if (newStatus !== task.status) {
+        await updateDoc(doc(db, 'tasks', task.id), {
+          status: newStatus
+        });
+      }
     });
+
     return () => unsub();
-  }, [task.id]);
+  }, [task.id, task.status]);
 
   const completedCount = subtasks.filter(s => s.status === 'done').length;
+
+  const getTaskStatusFromSubtasks = (subs: SubTask[]) => {
+    if (subs.length === 0) return 'pending';
+
+    const allDone = subs.every(s => s.status === 'done');
+    if (allDone) return 'done';
+
+    const hasHold = subs.some(s => s.status === 'hold');
+    if (hasHold) return 'hold';
+
+    const hasInProgress = subs.some(s => s.status === 'inprogress');
+    if (hasInProgress) return 'inprogress';
+
+    return 'pending';
+  };
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
@@ -880,38 +938,34 @@ const TaskCard = ({ task, onDelete, onDeleteSubTask }: TaskCardProps) => {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <select
-            value={task.status}
-            onClick={e => e.stopPropagation()}
-            onChange={async (e) => await updateDoc(doc(db, 'tasks', task.id), { status: e.target.value })}
-            className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold uppercase tracking-wider text-slate-600"
-          >
-            <option value="pending">Pending</option>
-            <option value="inprogress">In Progress</option>
-            <option value="done">Done</option>
-          </select>
+          <ArrowBigRightDash size={21} className={cn("text-slate-400 transition-transform",
+            expanded && "rotate-90 text-blue-600"
+          )} />
+          <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider",
+            task.status === 'done' && "bg-emerald-50 text-emerald-600 border border-emerald-100",
+            task.status === 'inprogress' && "bg-blue-50 text-blue-600 border border-blue-100",
+            task.status === 'hold' && "bg-red-50 text-red-600 border border-red-100",
+            task.status === 'pending' && "bg-slate-100 text-slate-500 border border-slate-200"
+          )}
+          > {task.status}
+          </span>
 
           {showConfirm ? (
             <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-              <button
-                onClick={onDelete}
+              <button onClick={onDelete}
                 className="px-3 py-1 bg-red-600 text-white rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-red-700 transition-all"
-              >
-                Confirm
+              > Confirm
               </button>
               <button
                 onClick={() => setShowConfirm(false)}
                 className="px-3 py-1 bg-slate-200 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-slate-300 transition-all"
-              >
-                Cancel
+              > Cancel
               </button>
             </div>
           ) : (
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowConfirm(true); }}
+            <button onClick={(e) => { e.stopPropagation(); setShowConfirm(true); }}
               className="p-2 text-slate-400 hover:text-red-600 transition-colors"
-            >
-              <Trash2 size={18} />
+            > <Trash2 size={18} />
             </button>
           )}
         </div>
@@ -924,8 +978,7 @@ const TaskCard = ({ task, onDelete, onDeleteSubTask }: TaskCardProps) => {
             {subtasks.map(sub => (
               <div key={sub.id} className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl group">
                 <div className="flex items-center gap-3">
-                  <div className={cn(
-                    "w-2 h-2 rounded-full",
+                  <div className={cn("w-2 h-2 rounded-full",
                     sub.status === 'done' ? "bg-emerald-500" : sub.status === 'inprogress' ? "bg-blue-600" : "bg-slate-300"
                   )} />
                   <div>
@@ -934,27 +987,27 @@ const TaskCard = ({ task, onDelete, onDeleteSubTask }: TaskCardProps) => {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className={cn(
-                    "px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider",
+                  <span className={cn("px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider",
                     sub.status === 'done' ? "bg-emerald-50 text-emerald-600" :
                       sub.status === 'inprogress' ? "bg-blue-50 text-blue-600" :
-                        sub.status === 'hold' ? "bg-red-50 text-red-600" :
-                          "bg-slate-100 text-slate-500"
-                  )}>
-                    {sub.status}
+                        sub.status === 'hold' ? "bg-red-50 text-red-600" : "bg-slate-100 text-slate-500"
+                  )}> {sub.status}
                   </span>
                   <br />
-                  {/* <button onClick={() => onDeleteSubTask(sub)}
-                    className="p-1.5 text-slate-300 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all"
-                    title="Delete Subtask" >
-                    <Trash2 size={14} />
-                  </button> */}
                 </div>
               </div>
             ))}
+
+            {subtasks.length === 0 && (
+              <div className="p-8 text-center text-slate-400 text-sm font-medium italic">
+                No subtasks created for this task.
+              </div>
+            )}
+
           </div>
         </div>
       )}
+
     </div>
   );
 };
