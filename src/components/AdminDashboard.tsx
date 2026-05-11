@@ -902,7 +902,6 @@ const TaskCard = ({ task, onDelete, onDeleteSubTask }: TaskCardProps) => {
 
       // ✅ derive status
       const newStatus = getTaskStatusFromSubtasks(subs);
-
       // ✅ update only if changed (prevents loop)
       if (newStatus !== task.status) {
         await updateDoc(doc(db, 'tasks', task.id), {
@@ -910,7 +909,6 @@ const TaskCard = ({ task, onDelete, onDeleteSubTask }: TaskCardProps) => {
         });
       }
     });
-
     return () => unsub();
   }, [task.id, task.status]);
 
@@ -946,47 +944,51 @@ const TaskCard = ({ task, onDelete, onDeleteSubTask }: TaskCardProps) => {
         </div>
         <div className="flex items-center gap-4">
           <ArrowBigRightDash size={21} className={cn("text-slate-400 transition-transform",
-            expanded && "rotate-90 text-blue-600"
+            expanded && "rotate-90 text-blue-600 cursor-default"
           )} />
-          <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider",
-            task.status === 'done' && "bg-emerald-50 text-emerald-600 border border-emerald-100",
-            task.status === 'inprogress' && "bg-blue-50 text-blue-600 border border-blue-100",
-            task.status === 'hold' && "bg-red-50 text-red-600 border border-red-100",
-            task.status === 'pending' && "bg-slate-100 text-slate-500 border border-slate-200"
-          )}
-          > {task.status}
-          </span>
 
-          {showConfirm ? (
-            <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-              <button onClick={onDelete}
-                className="px-3 py-1 bg-red-600 text-white rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-red-700 transition-all"
-              > Confirm
-              </button>
-              
-              <button onClick={() => setShowConfirm(false)}
-                className="px-3 py-1 bg-slate-200 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-slate-300 transition-all"
-              > Cancel
-              </button>
-            </div>
+          {expanded ? (
+            <>
+              {showConfirm ? (
+                <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                  <button onClick={onDelete}
+                    className="px-3 py-1 bg-red-600 text-white rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-red-700 transition-all"
+                  > Confirm
+                  </button>
+
+                  <button onClick={() => setShowConfirm(false)}
+                    className="px-3 py-1 bg-slate-200 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-slate-300 transition-all"
+                  > Cancel
+                  </button>
+                </div>
+              ) : (
+                <button onClick={(e) => { e.stopPropagation(); setShowConfirm(true); }}
+                  className="p-2 text-slate-400 hover:text-red-600 transition-colors cursor-pointer"
+                > <Trash2 size={21} />
+                </button>
+              )}
+            </>
           ) : (
-            <button onClick={(e) => { e.stopPropagation(); setShowConfirm(true); }}
-              className="p-2 text-slate-400 hover:text-red-600 transition-colors"
-            > <Trash2 size={18} />
-            </button>
+            <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider",
+              task.status === 'done' && "bg-emerald-50 text-emerald-600 border border-emerald-100",
+              task.status === 'inprogress' && "bg-blue-50 text-blue-600 border border-blue-100",
+              task.status === 'hold' && "bg-red-50 text-red-600 border border-red-100",
+              task.status === 'pending' && "bg-slate-100 text-slate-500 border border-slate-200"
+            )} > {task.status}
+            </span>
           )}
+
         </div>
       </div>
 
       {expanded && (
         <div className="px-6 pb-6 pt-2 border-t border-slate-100 bg-slate-50/50">
-          <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-4">Subtasks 
-            <span className={cn( "px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider gap-1 ml-2",
+          <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-4">Subtasks
+            <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider gap-1 ml-2",
               task.priority === 'High' ? "bg-red-50 text-red-600 border border-red-100" :
-              task.priority === 'Medium' ? "bg-orange-50 text-orange-600 border border-orange-100" :
-                "bg-blue-50 text-blue-600 border border-blue-100"
-            )}>
-              {task.priority}
+                task.priority === 'Medium' ? "bg-orange-50 text-orange-600 border border-orange-100" :
+                  "bg-blue-50 text-blue-600 border border-blue-100"
+            )}> {task.priority}
             </span>
           </h4>
           <div className="space-y-3">
