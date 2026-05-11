@@ -937,14 +937,6 @@ const TaskCard = ({ task, onDelete, onDeleteSubTask }: TaskCardProps) => {
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-3 mb-2">
             <h3 className="text-lg font-bold text-slate-900">{task.title}</h3>
-            <span className={cn(
-              "px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider",
-              task.priority === 'High' ? "bg-red-50 text-red-600 border border-red-100" :
-                task.priority === 'Medium' ? "bg-orange-50 text-orange-600 border border-orange-100" :
-                  "bg-blue-50 text-blue-600 border border-blue-100"
-            )}>
-              {task.priority}
-            </span>
           </div>
           <div className="flex items-center gap-4 text-xs text-slate-500 font-medium">
             <span className="flex items-center gap-1"><Clock size={14} /> Due: {new Date(task.deadline).toLocaleDateString('en-GB').replace(/\//g, '-')}</span>
@@ -971,8 +963,8 @@ const TaskCard = ({ task, onDelete, onDeleteSubTask }: TaskCardProps) => {
                 className="px-3 py-1 bg-red-600 text-white rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-red-700 transition-all"
               > Confirm
               </button>
-              <button
-                onClick={() => setShowConfirm(false)}
+              
+              <button onClick={() => setShowConfirm(false)}
                 className="px-3 py-1 bg-slate-200 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-slate-300 transition-all"
               > Cancel
               </button>
@@ -988,7 +980,15 @@ const TaskCard = ({ task, onDelete, onDeleteSubTask }: TaskCardProps) => {
 
       {expanded && (
         <div className="px-6 pb-6 pt-2 border-t border-slate-100 bg-slate-50/50">
-          <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-4">Subtasks</h4>
+          <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-4">Subtasks 
+            <span className={cn( "px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider gap-1 ml-2",
+              task.priority === 'High' ? "bg-red-50 text-red-600 border border-red-100" :
+              task.priority === 'Medium' ? "bg-orange-50 text-orange-600 border border-orange-100" :
+                "bg-blue-50 text-blue-600 border border-blue-100"
+            )}>
+              {task.priority}
+            </span>
+          </h4>
           <div className="space-y-3">
             {subtasks.map(sub => (
               <div key={sub.id} className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl group">
