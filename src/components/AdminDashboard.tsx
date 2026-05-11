@@ -37,11 +37,24 @@ export default function AdminDashboard() {
         setRoleSlots(doc.data() as Record<string, number>);
       }
     });
+
     return () => { unsubUsers(); unsubTasks(); unsubSubtasks(); unsubSettings(); };
   }, []);
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // strict validation
+    if (!newUser.fullName.trim() || !newUser.email.trim() || !newUser.userId.trim() || newUser.skills.length === 0) {
+      alert("fill the form to register a user");
+      return;
+    }
+
+    if (users.some(u => u.email === newUser.email)) {
+      alert("Email already exists");
+      return;
+    }
+
     setLoading(true);
     try {
       // But the prompt asks for real Firebase.
@@ -183,6 +196,7 @@ export default function AdminDashboard() {
     }
   };
 
+  // New export function to generate a text report of all tasks and users
   const handleExportText = () => {
     try {
       let text = `TASK AI EXPORT\n`;
@@ -223,6 +237,7 @@ export default function AdminDashboard() {
       console.error('Text export failed:', err);
     }
   };
+  // end of new export function
 
   const getSlotUsage = (role: Role) => {
     if (role === 'Admin') return 0;
