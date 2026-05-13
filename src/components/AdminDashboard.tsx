@@ -3,7 +3,7 @@ import { collection, onSnapshot, query, addDoc, doc, setDoc, deleteDoc, updateDo
 import { db, auth } from '../firebase';
 import { UserProfile, Role, Task, SubTask } from '../types';
 import { ROLE_SLOTS, ALL_SKILLS } from '../constants';
-import { Users, Plus, Trash2, LayoutDashboard, ListChecks, PieChart, LogOut, Loader2, Sparkles, CheckCircle2, Clock, AlertCircle, BarChart3, Menu, X, Bell, Pause, Copy, ArrowBigDown, ArrowBigDownDash, ArrowBigDownDashIcon, ArrowBigLeft, ArrowBigRight, ArrowBigRightDash } from 'lucide-react';
+import { Users, Plus, Trash2, LayoutDashboard, ListChecks, PieChart, LogOut, Loader2, Sparkles, CheckCircle2, Clock, AlertCircle, BarChart3, Menu, X, Bell, Pause, Copy, ArrowBigDown, ArrowBigDownDash, ArrowBigDownDashIcon, ArrowBigLeft, ArrowBigRight, ArrowBigRightDash, ArrowLeft } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { breakdownTask } from '../lib/gemini';
 
@@ -320,8 +320,7 @@ export default function AdminDashboard() {
 
         <div className="p-4 border-t border-slate-200">
           <button onClick={() => auth.signOut()} className="w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all font-medium">
-            <LogOut size={20} />
-            Logout
+            <LogOut size={20} /> Logout
           </button>
         </div>
       </aside>
@@ -346,10 +345,9 @@ export default function AdminDashboard() {
             {activeTab === 'settings' && "Manage role capacity and global limits"}
           </p>
         </header>
-        {activeTab === 'all-tasks' && (<button onClick={handleExportText} className="mb-4 px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-sm font-bold transition-all flex items-center gap-2 shadow-lg shadow-blue-500/20
-        right-8 top-18 absolute cursor-pointer z-10">
-          <BarChart3 size={16} />
-          Export Report
+        {activeTab === 'all-tasks' && (<button onClick={handleExportText} className="mb-4 px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg 
+            text-sm font-bold transition-all flex items-center gap-2 shadow-lg shadow-blue-500/20 right-8 top-18 absolute cursor-pointer z-10">
+          <BarChart3 size={16} /> Export Report
         </button>)}
 
         {/* Dashboard Tab */}
@@ -754,33 +752,41 @@ export default function AdminDashboard() {
               <div className="flex items-center justify-between mb-8">
                 <div>
                   <h2 className="text-2xl font-black text-slate-900">Role Capacity</h2>
-                  <p className="text-sm text-slate-600 font-medium">Manage the maximum number of active tasks each role can have.</p>
+                  <p className="text-sm text-slate-600 font-medium"> Manage the maximum number of users for each role in the system</p>
                 </div>
-                <button onClick={handleUpdateRoleSlots} disabled={savingSettings}
-                  className="px-3 py-3 bg-blue-500 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all flex items-center gap-1 disabled:opacity-50"
-                >
-                  {savingSettings ? <Loader2 className="animate-spin" size={18} /> : <CheckCircle2 size={18} />}
-                  Save
-                </button>
+
+                <div className="flex items-center gap-4">
+                  <button onClick={() => setActiveTab('dashboard')}
+                    className='px-2 py-2 bg-red-400 text-white rounded-xl font-bold text-sm hover:bg-red-700 transition-all flex items-center gap-1'
+                  ><ArrowLeft size={18} /> Back
+                  </button>
+
+                  <button onClick={handleUpdateRoleSlots} disabled={savingSettings}
+                    className="px-2 py-2 bg-blue-500 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all flex items-center gap-1 disabled:opacity-50"
+                  > {savingSettings ? <Loader2 className="animate-spin" size={18} /> : <CheckCircle2 size={18} />} Save
+                  </button>
+                </div>
+
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {Object.entries(roleSlots).map(([role, limit]) => (
-                  <div key={role} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                  <div key={role} className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100">
                     <span className="text-sm font-bold text-slate-700">{role}</span>
                     <div className="flex items-center gap-3">
                       <button onClick={() => setRoleSlots(prev => ({ ...prev, [role]: Math.max(1, (prev[role] || 0) - 1) }))}
-                        className="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-100"
+                        className="w-6 h-6 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-100"
                       > -
                       </button>
                       <span className="w-8 text-center font-mono font-bold text-blue-600">{limit}</span>
                       <button onClick={() => setRoleSlots(prev => ({ ...prev, [role]: (prev[role] || 0) + 1 }))}
-                        className="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-100"
+                        className="w-6 h-6 flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-100"
                       > +
                       </button>
                     </div>
                   </div>
                 ))}
+
               </div>
             </div>
           </div>
@@ -852,6 +858,7 @@ export default function AdminDashboard() {
             </div>
           </div>
         )}
+
       </main>
     </div>
   );
@@ -862,8 +869,7 @@ function SidebarItem({ icon, label, active, onClick }: { icon: React.ReactNode, 
     <button onClick={onClick} className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm",
       active ? "bg-blue-50 text-blue-600" : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
     )}
-    >
-      {icon} {label}
+    > {icon} {label}
     </button>
   );
 }
