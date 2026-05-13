@@ -4,7 +4,7 @@ import { db, auth } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { SubTask, SubTaskStatus } from '../types';
 import { ListChecks, PieChart, Clock, CheckCircle2, LogOut, User as UserIcon, LayoutDashboard, Loader2, AlertCircle, Menu, X } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { cn, getDaysPastDeadline, isReminderDue } from '../lib/utils';
 
 export default function UserDashboard() {
   const { profile } = useAuth();
@@ -13,6 +13,8 @@ export default function UserDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'tasks' | 'profile'>('tasks');
+
+  const overdueReminders = subtasks.filter(sub => sub.deadline && sub.status !== 'done' && isReminderDue(sub.deadline));
 
   useEffect(() => {
     if (!profile?.email) {
@@ -134,6 +136,26 @@ export default function UserDashboard() {
               <p className="text-slate-600 text-sm font-medium">Your assigned tasks and subtasks</p>
             </header>
 
+            {/* Reminder Alerts */}
+            {overdueReminders.length > 0 && (
+              <div className="bg-orange-50 border border-orange-200 rounded-2xl p-5 mb-6 text-orange-900">
+                <div className="flex items-center gap-3 mb-2">
+                  <AlertCircle size={20} className="text-orange-600" />
+                  <div>
+                    <h3 className="text-sm font-bold">Overdue reminder alerts</h3>
+                    <p className="text-xs text-orange-700">{overdueReminders.length} task(s) are overdue by 2+ days and need follow-up.</p>
+                  </div>
+                </div>
+                <ul className="list-disc list-inside text-sm space-y-1">
+                  {overdueReminders.map(sub => (
+                    <li key={sub.id}>
+                      <span className="font-semibold">{sub.title}</span> for {sub.assignedToName} was due {new Date(sub.deadline!).toLocaleDateString('en-GB').replace(/\//g, '-')} ({getDaysPastDeadline(sub.deadline)} days ago)
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {/* Completion Progress Bar */}
             {subtasks.length > 0 && (
               <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-8">
@@ -210,6 +232,8 @@ export default function UserDashboard() {
                     done: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', dot: 'bg-emerald-500', label: 'Completed' }
                   };
                   const config = statusConfig[sub.status];
+                  const overdueDays = sub.deadline ? getDaysPastDeadline(sub.deadline) ?? 0 : 0;
+                  const reminderDue = sub.deadline && sub.status !== 'done' && isReminderDue(sub.deadline);
 
                   return (
                     <div key={sub.id} className={cn("border rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm hover:shadow-md transition-all", config.bg, config.border, "bg-white border-slate-200")}>
@@ -222,19 +246,25 @@ export default function UserDashboard() {
                         <h3 className="text-lg font-bold text-slate-900 mb-1">{sub.title}</h3>
                         <p className="text-sm text-slate-600 mb-4">{sub.description}</p>
 
-                        <div className="flex items-center gap-1 px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg">
+                        <div className="flex items-center gap-1 px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg mb-3">
                           <UserIcon size={14} className="text-slate-400" />
                           <span className="text-xs font-medium text-slate-600">{sub.assignedToName}</span>
                           <br />
                           {sub.deadline && (
                             <><Clock size={14} className="text-blue-400" />
                               <span className="text-xs font-medium text-slate-500">
-                                Deadline: {new Date(sub.deadline).toLocaleDateString('en-GB').replace(/\//g, '-')}
+                                {new Date(sub.deadline).toLocaleDateString('en-GB').replace(/\//g, '-')}
                               </span>
                             </>
                           )}
                         </div>
-                        <br />
+
+                        {reminderDue && (
+                          <div className="mt-3 mb-3 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 text-red-700 text-[11px] font-semibold">
+                            <AlertCircle size={14} /> Reminder overdue by {overdueDays} day{overdueDays === 1 ? '' : 's'}
+                          </div>
+                        )}
+
                         <div className="flex flex-wrap gap-2">
                           {sub.skillsRequired.map(s => (
                             <span key={s} className="px-2 py-1 bg-blue-50 text-blue-600 rounded-md text-[10px] font-bold uppercase tracking-wider">{s}</span>
@@ -332,12 +362,14 @@ export default function UserDashboard() {
                       {skill}
                     </span>
                   ))}
+
                 </div>
               </div>
               <span className="text-state-100 text-blue-300 flex items-center justify-center">* Please capture a photo, open your device's camera app</span>
             </div>
           </div>
         )}
+
       </main>
     </div>
   );
@@ -345,16 +377,14 @@ export default function UserDashboard() {
 
 function SidebarItem({ icon, label, active, onClick }: { icon: React.ReactNode, label: string, active: boolean, onClick: () => void }) {
   return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm",
-        active ? "bg-blue-50 text-blue-600" : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
-      )}
-    >
-      {icon}
+    <button onClick={onClick} className={cn(
+      "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm",
+      active ? "bg-blue-50 text-blue-600" : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+    )}
+    > {icon}
       {label}
     </button>
   );
 }
-// <!--line off 360 -->
+
+// <!--line off 390 -->
