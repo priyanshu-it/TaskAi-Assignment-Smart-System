@@ -4,7 +4,7 @@ import { db, auth } from '../firebase';
 import { UserProfile, Role, Task, SubTask } from '../types';
 import { ROLE_SLOTS, ALL_SKILLS } from '../constants';
 import { Users, Plus, Trash2, LayoutDashboard, ListChecks, PieChart, LogOut, Loader2, Sparkles, CheckCircle2, Clock, AlertCircle, BarChart3, Menu, X, Bell, Pause, Copy, ArrowBigDown, ArrowBigDownDash, ArrowBigDownDashIcon, ArrowBigLeft, ArrowBigRight, ArrowBigRightDash, ArrowLeft } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { cn, getDaysPastDeadline, isReminderDue } from '../lib/utils';
 import { breakdownTask } from '../lib/gemini';
 
 export default function AdminDashboard() {
@@ -183,6 +183,8 @@ export default function AdminDashboard() {
       console.error(err);
     }
   };
+
+  const overdueReminders = subtasks.filter(sub => sub.deadline && sub.status !== 'done' && isReminderDue(sub.deadline));
 
   const handleUpdateRoleSlots = async () => {
     setSavingSettings(true);
@@ -403,6 +405,31 @@ export default function AdminDashboard() {
                               return (
                                 <li key={email}>
                                   <span className="font-semibold">{user?.fullName}</span> - {email} ({subtasks.filter(s => s.assignedTo === email && s.status === 'hold').length} hold task(s))
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {overdueReminders.length > 0 && (
+                  <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-6">
+                    <div className="flex items-start gap-4">
+                      <Bell className="text-amber-600 flex-shrink-0 mt-1" size={24} />
+                      <div>
+                        <h3 className="font-bold text-slate-900 mb-2">Reminder sent alerts</h3>
+                        <div className="space-y-2 text-sm text-slate-700">
+                          <p>There are <span className="font-bold text-amber-600">{overdueReminders.length}</span> subtask(s) overdue by 2+ days and ready for reminder follow-up.</p>
+                          <ul className="list-disc list-inside space-y-1 mt-2">
+                            {Array.from(new Set(overdueReminders.map(s => s.assignedTo))).map(email => {
+                              const user = users.find(u => u.email === email);
+                              const count = overdueReminders.filter(s => s.assignedTo === email).length;
+                              return (
+                                <li key={email}>
+                                  <span className="font-semibold">{user?.fullName || email}</span> - {count} overdue reminder(s)
                                 </li>
                               );
                             })}
@@ -679,8 +706,7 @@ export default function AdminDashboard() {
               <Input label="Task Title" value={newTask.title} onChange={v => setNewTask({ ...newTask, title: v })} placeholder="e.g., Build user authentication system" />
               <div className="space-y-2">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Description</label>
-                <textarea value={newTask.description}
-                  onChange={e => setNewTask({ ...newTask, description: e.target.value })}
+                <textarea value={newTask.description} onChange={e => setNewTask({ ...newTask, description: e.target.value })}
                   placeholder="Describe the task in detail..."
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm min-h-[120px] text-slate-900"
                 />
@@ -688,8 +714,7 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Priority</label>
-                  <select value={newTask.priority}
-                    onChange={e => setNewTask({ ...newTask, priority: e.target.value as any })}
+                  <select value={newTask.priority} onChange={e => setNewTask({ ...newTask, priority: e.target.value as any })}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm text-slate-900"
                   >
                     <option value="Low">Low</option>
@@ -919,6 +944,8 @@ const TaskCard = ({ task, onDelete, onDeleteSubTask }: TaskCardProps) => {
   }, [task.id, task.status]);
 
   const completedCount = subtasks.filter(s => s.status === 'done').length;
+  const overdueDays = getDaysPastDeadline(task.deadline);
+  const taskReminderDue = task.deadline && task.status !== 'done' && isReminderDue(task.deadline);
 
   const getTaskStatusFromSubtasks = (subs: SubTask[]) => {
     if (subs.length === 0) return 'pending';
@@ -942,8 +969,13 @@ const TaskCard = ({ task, onDelete, onDeleteSubTask }: TaskCardProps) => {
           <div className="flex flex-wrap items-center gap-3 mb-2">
             <h3 className="text-lg font-bold text-slate-900">{task.title}</h3>
           </div>
-          <div className="flex items-center gap-4 text-xs text-slate-500 font-medium">
+          <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 font-medium">
             <span className="flex items-center gap-1"><Clock size={14} /> Due: {new Date(task.deadline).toLocaleDateString('en-GB').replace(/\//g, '-')}</span>
+            {taskReminderDue && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-1 text-red-700">
+                Reminder due {overdueDays ?? 0} day{(overdueDays ?? 0) === 1 ? '' : 's'}
+              </span>
+            )}
             <span className="flex items-center gap-1">{task.status === 'done' ? <CheckCircle2 size={17} className="text-emerald-500" /> :
               <ListChecks size={14} />} {completedCount}/{subtasks.length} subtasks done</span>
           </div>
