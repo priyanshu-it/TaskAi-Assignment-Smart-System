@@ -1,7 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
-
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -24,7 +23,6 @@ export function getDaysPastDeadline(deadline?: string) {
 export function isReminderDue(deadline?: string) {
   const days = getDaysPastDeadline(deadline);
   return days !== null && days >= 1;
-  // days >= 1 :: reminder
 }
 
 // line off 
