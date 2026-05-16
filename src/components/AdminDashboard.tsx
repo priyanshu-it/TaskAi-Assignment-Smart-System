@@ -973,7 +973,7 @@ const TaskCard = ({ task, onDelete, onDeleteSubTask }: TaskCardProps) => {
             <span className="flex items-center gap-1"><Clock size={14} /> Due: {new Date(task.deadline).toLocaleDateString('en-GB').replace(/\//g, '-')}</span>
             {taskReminderDue && (
               <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-1 text-red-700">
-                Reminder due {overdueDays ?? 0} day{(overdueDays ?? 0) === 1 ? '' : 's'}
+                 Reminder overdue by {overdueDays} day{overdueDays === 1 ? '' : 's'}
               </span>
             )}
             <span className="flex items-center gap-1">{task.status === 'done' ? <CheckCircle2 size={17} className="text-emerald-500" /> :
