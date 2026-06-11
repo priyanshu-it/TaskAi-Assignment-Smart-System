@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { collection, onSnapshot, query, where, doc, updateDoc, getDocs, collectionGroup, increment } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,13 +8,14 @@ import { cn, getDaysPastDeadline, isReminderDue } from '../lib/utils';
 
 export default function UserDashboard() {
   const { profile } = useAuth();
-  const [subtasks, setSubtasks] = useState<SubTask[]>([]);
+  const [userSubtasks, setUserSubtasks] = useState<SubTask[]>([]);
+  const [allSubtasks, setAllSubtasks] = useState<SubTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'tasks' | 'profile'>('tasks');
+  const [activeTab, setActiveTab] = useState<'tasks' | 'details' | 'profile'>('tasks');
 
-  const overdueReminders = subtasks.filter(sub => sub.deadline && sub.status !== 'done' && isReminderDue(sub.deadline));
+  const overdueReminders = userSubtasks.filter(sub => sub.deadline && sub.status !== 'done' && isReminderDue(sub.deadline));
 
   useEffect(() => {
     if (!profile?.email) {
@@ -22,22 +23,54 @@ export default function UserDashboard() {
       return;
     }
 
-    console.log("UserDashboard: Fetching subtasks for email:", profile.email);
+    console.log("UserDashboard: Fetching assigned subtasks for email:", profile.email);
     const q = query(collection(db, 'subtasks'), where('assignedTo', '==', profile.email));
     const unsub = onSnapshot(q, (snapshot) => {
-      console.log("UserDashboard: Received subtasks snapshot for", profile.email, "count:", snapshot.size);
+      console.log("UserDashboard: Received assigned subtasks snapshot for", profile.email, "count:", snapshot.size);
       if (snapshot.size === 0) {
         console.log("UserDashboard: No subtasks found. Check if 'assignedTo' in Firestore exactly matches", profile.email);
       }
-      setSubtasks(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as SubTask)));
+      setUserSubtasks(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as SubTask)));
       setLoading(false);
     }, (error) => {
-      console.error("UserDashboard: Error fetching subtasks:", error);
+      console.error("UserDashboard: Error fetching assigned subtasks:", error);
       setLoading(false);
     });
 
     return () => unsub();
   }, [profile?.email]);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'subtasks'), (snapshot) => {
+      setAllSubtasks(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as SubTask)));
+    }, (error) => {
+      console.error("UserDashboard: Error fetching all subtasks:", error);
+    });
+
+    return () => unsub();
+  }, []);
+
+  const taskDetails = useMemo(() => {
+    const taskIdSet = new Set(userSubtasks.map(sub => sub.taskId));
+    const grouped = Array.from(allSubtasks.reduce((map, sub) => {
+      if (!taskIdSet.has(sub.taskId)) return map;
+      const existing = map.get(sub.taskId) ?? {
+        taskId: sub.taskId,
+        taskTitle: sub.parentTaskTitle || 'Untitled Task',
+        handlerNames: new Set<string>(),
+        subtasks: [] as SubTask[]
+      };
+      existing.handlerNames.add(sub.assignedToName || sub.assignedTo);
+      existing.subtasks.push(sub);
+      map.set(sub.taskId, existing);
+      return map;
+    }, new Map<string, { taskId: string; taskTitle: string; handlerNames: Set<string>; subtasks: SubTask[] }>()).values());
+
+    return grouped.map(group => ({
+      ...group,
+      handlerNames: Array.from(group.handlerNames).sort(),
+    }));
+  }, [allSubtasks, userSubtasks]);
 
   const updateStatus = async (sub: SubTask, newStatus: SubTaskStatus) => {
     try {
@@ -82,8 +115,7 @@ export default function UserDashboard() {
           <br />
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Assignment</span>
         </h2>
-        <button
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           className="p-2 text-slate-600 hover:bg-slate-50 rounded-lg transition-all"
         >
           {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
@@ -92,9 +124,7 @@ export default function UserDashboard() {
 
       {/* Sidebar Overlay */}
       {isSidebarOpen && (
-        <div className="lg:hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40"
-          onClick={() => setIsSidebarOpen(false)}
-        />
+        <div className="lg:hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40" onClick={() => setIsSidebarOpen(false)} />
       )}
 
       {/* Sidebar */}
@@ -115,9 +145,11 @@ export default function UserDashboard() {
           <div className="text-sm font-bold text-slate-900 mb-1">{profile?.fullName}</div>
         </div>
 
+        {/* Navigation Items */}
         <nav className="flex-1 p-4 space-y-2">
           <SidebarItem icon={<LayoutDashboard size={20} />} label="My Tasks" active={activeTab === 'tasks'} onClick={() => { setActiveTab('tasks'); setIsSidebarOpen(false); }} />
-          <SidebarItem icon={<UserIcon size={20} />} label="Profile" active={activeTab === 'profile'} onClick={() => { setActiveTab('profile'); setIsSidebarOpen(false); }} />
+          <SidebarItem icon={<ListChecks size={20} />} label="Task Details" active={activeTab === 'details'} onClick={() => { setActiveTab('details'); setIsSidebarOpen(false); }} />
+          <SidebarItem icon={<UserIcon size={20} />} label="Profile Status" active={activeTab === 'profile'} onClick={() => { setActiveTab('profile'); setIsSidebarOpen(false); }} />
         </nav>
 
         <div className="p-4 border-t border-slate-200">
@@ -157,19 +189,19 @@ export default function UserDashboard() {
             )}
 
             {/* Completion Progress Bar */}
-            {subtasks.length > 0 && (
+            {userSubtasks.length > 0 && (
               <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-8">
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Task Completion Status</h3>
                     <span className="text-sm font-bold text-emerald-600">
-                      {Math.round((subtasks.filter(s => s.status === 'done').length / subtasks.length) * 100)}% Complete
+                      {Math.round((userSubtasks.filter(s => s.status === 'done').length / userSubtasks.length) * 100)}% Complete
                     </span>
                   </div>
                   <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
                     <div
                       className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-full rounded-full transition-all duration-300"
-                      style={{ width: `${(subtasks.filter(s => s.status === 'done').length / subtasks.length) * 100}%` }}
+                      style={{ width: `${(userSubtasks.filter(s => s.status === 'done').length / userSubtasks.length) * 100}%` }}
                     />
                   </div>
                 </div>
@@ -180,28 +212,28 @@ export default function UserDashboard() {
                     <ListChecks className="text-purple-600" />
                     <div>
                       <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total Subtask</div>
-                      <div className="text-lg font-bold text-slate-600">{subtasks.length}</div>
+                      <div className="text-lg font-bold text-slate-600">{userSubtasks.length}</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg border border-orange-100">
                     <Clock className="text-orange-600" />
                     <div>
                       <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Pending</div>
-                      <div className="text-lg font-bold text-orange-600">{subtasks.filter(s => s.status === 'pending').length}</div>
+                      <div className="text-lg font-bold text-orange-600">{userSubtasks.filter(s => s.status === 'pending').length}</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
                     <Clock className="text-blue-600" />
                     <div>
                       <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">In Progress</div>
-                      <div className="text-lg font-bold text-blue-600">{subtasks.filter(s => s.status === 'inprogress').length}</div>
+                      <div className="text-lg font-bold text-blue-600">{userSubtasks.filter(s => s.status === 'inprogress').length}</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-3 bg-red-50 rounded-lg border border-red-100">
                     <AlertCircle className="text-red-600" />
                     <div>
                       <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">On Hold</div>
-                      <div className="text-lg font-bold text-red-600">{subtasks.filter(s => s.status === 'hold').length}</div>
+                      <div className="text-lg font-bold text-red-600">{userSubtasks.filter(s => s.status === 'hold').length}</div>
                     </div>
                   </div>
                 </div>
@@ -210,7 +242,7 @@ export default function UserDashboard() {
                   <CheckCircle2 className="text-emerald-600" />
                   <div>
                     <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Completed</div>
-                    <div className="text-lg font-bold text-emerald-600">{subtasks.filter(s => s.status === 'done').length}</div>
+                    <div className="text-lg font-bold text-emerald-600">{userSubtasks.filter(s => s.status === 'done').length}</div>
                   </div>
                 </div>
               </div>
@@ -222,9 +254,9 @@ export default function UserDashboard() {
               </h1>
             </div>
 
-            {subtasks.length > 0 ? (
+            {userSubtasks.length > 0 ? (
               <div className="space-y-4">
-                {subtasks.map(sub => {
+                {userSubtasks.map(sub => {
                   const statusConfig = {
                     pending: { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', dot: 'bg-orange-500', label: 'Pending' },
                     inprogress: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', dot: 'bg-blue-500', label: 'In Progress' },
@@ -316,6 +348,59 @@ export default function UserDashboard() {
               </div>
             )}
           </>
+        ) : activeTab === 'details' ? (
+          <div className="space-y-6">
+            <header className="mb-4">
+              <h1 className="text-2xl lg:text-3xl font-bold text-slate-900 mb-2 tracking-tight">Task Details</h1>
+              <p className="text-slate-600 text-sm font-medium">See the users handling your tasks and who owns each subtask.</p>
+            </header>
+
+            {taskDetails.length > 0 ? (
+              <div className="space-y-5">
+                {taskDetails.map(task => (
+                  <div key={task.taskId} className="bg-white border border-slate-300 border-left-8 border-l-blue-600 rounded-2xl p-6 shadow-sm">
+                    <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+                      <div>
+                        <h2 className="text-xl font-bold text-blue-900 uppercase tracking-wider underline decoration-blue-900 decoration-2">{task.taskTitle}</h2>
+                        <p className="text-sm text-slate-500 mt-2">Users handling this task: </p>
+                      </div>
+                      <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 text-xs font-bold uppercase tracking-wider text-blue-700">
+                        {task.subtasks.length} Subtask{task.subtasks.length === 1 ? '' : 's'}
+                      </div>
+                    </div>
+
+                    <div className="mt-6 space-y-4">
+                      {task.subtasks.map(sub => (
+                        <div key={sub.id} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                            <div>
+                              <h3 className="text-lg font-semibold text-slate-900">{sub.title}</h3>
+                              <p className="text-sm text-slate-600 mt-1">{sub.description}</p>
+                            </div>
+                            <div className="text-sm text-slate-600">
+                              Assigned to: <span className="font-semibold text-slate-900">{sub.assignedToName || sub.assignedTo}</span>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 flex flex-wrap gap-3 text-xs text-slate-500">
+                            <div className="px-3 py-2 bg-white rounded-full border border-slate-200">Status: <span className="font-semibold text-slate-700">{sub.status}</span></div>
+                            {sub.deadline && (
+                              <div className="px-3 py-2 bg-white rounded-full border border-slate-200">Due: <span className="font-semibold text-slate-700">{new Date(sub.deadline).toLocaleDateString('en-GB').replace(/\//g, '-')}</span></div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400 py-20">
+                <AlertCircle size={48} className="mb-4 opacity-20" />
+                <p className="text-sm font-medium">There are no task details to display yet.</p>
+              </div>
+            )}
+          </div>
         ) : (
           <div className="max-w-2xl mx-auto space-y-8">
             <header className="mb-8">
@@ -387,4 +472,4 @@ function SidebarItem({ icon, label, active, onClick }: { icon: React.ReactNode, 
   );
 }
 
-// <!--line off 390 -->
+// <!--line off 390 --> 475  -->
