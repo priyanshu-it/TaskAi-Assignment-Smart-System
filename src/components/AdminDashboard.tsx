@@ -347,10 +347,11 @@ export default function AdminDashboard() {
             {activeTab === 'settings' && "Manage role capacity and global limits"}
           </p>
         </header>
-        {activeTab === 'all-tasks' && (<button onClick={handleExportText} className="mb-4 px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg 
-            text-sm font-bold transition-all flex items-center gap-2 shadow-lg shadow-blue-500/20 right-8 top-18 absolute cursor-pointer z-10">
-          <BarChart3 size={16} /> Export Report
-        </button>)}
+        {activeTab === 'all-tasks' && (
+          <button onClick={handleExportText} className="mb-4 px-4 py-2 hover:underline hover:text-blue-600 bg-blue-100 rounded-lg
+            text-sm font-bold transition-all flex items-center gap-2 right-8 top-18 absolute cursor-pointer z-10">
+            <BarChart3 size={16} /> Report
+          </button>)}
 
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
@@ -933,6 +934,7 @@ const TaskCard = ({ task, onDelete, onDeleteSubTask }: TaskCardProps) => {
 
       // ✅ derive status
       const newStatus = getTaskStatusFromSubtasks(subs);
+      
       // ✅ update only if changed (prevents loop)
       if (newStatus !== task.status) {
         await updateDoc(doc(db, 'tasks', task.id), {
