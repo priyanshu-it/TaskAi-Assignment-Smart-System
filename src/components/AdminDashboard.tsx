@@ -3,7 +3,7 @@ import { collection, onSnapshot, query, addDoc, doc, setDoc, deleteDoc, updateDo
 import { db, auth } from '../firebase';
 import { UserProfile, Role, Task, SubTask } from '../types';
 import { ROLE_SLOTS, ALL_SKILLS } from '../constants';
-import { Users, Plus, Trash2, LayoutDashboard, ListChecks, PieChart, LogOut, Loader2, Sparkles, CheckCircle2, Clock, AlertCircle, BarChart3, Menu, X, Bell, Pause, Copy, ArrowBigDown, ArrowBigDownDash, ArrowBigDownDashIcon, ArrowBigLeft, ArrowBigRight, ArrowBigRightDash, ArrowLeft } from 'lucide-react';
+import { Users, Plus, Trash2, LayoutDashboard, ListChecks, PieChart, LogOut, Loader2, Sparkles, CheckCircle2, Clock, AlertCircle, BarChart3, Menu, X, Bell, Pause, Copy, Mail, ArrowBigDown, ArrowBigDownDash, ArrowBigDownDashIcon, ArrowBigLeft, ArrowBigRight, ArrowBigRightDash, ArrowLeft } from 'lucide-react';
 import { cn, getDaysPastDeadline, isReminderDue } from '../lib/utils';
 import { breakdownTask } from '../lib/gemini';
 
@@ -21,6 +21,9 @@ export default function AdminDashboard() {
   const [newUser, setNewUser] = useState({ fullName: '', email: '', userId: '', role: 'Front-End Developer' as Role, skills: [] as string[] });
   const [newTask, setNewTask] = useState({ title: '', description: '', priority: 'Medium' as any, deadline: '', skillsRequired: [] as string[] });
   const [aiBreakdown, setAiBreakdown] = useState<any[] | null>(null);
+  const minimumDeadlineDate = new Date();
+  minimumDeadlineDate.setDate(minimumDeadlineDate.getDate() + 5);
+  const minimumDeadline = minimumDeadlineDate.toLocaleDateString('en-CA');
 
   useEffect(() => {
     const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
@@ -88,6 +91,10 @@ export default function AdminDashboard() {
 
   const handleCreateTask = async () => {
     if (!aiBreakdown) return;
+    if (newTask.deadline && newTask.deadline < minimumDeadline) {
+      alert('Deadline must be at least 5 days from today');
+      return;
+    }
     setLoading(true);
     try {
       const taskRef = await addDoc(collection(db, 'tasks'), {
@@ -663,15 +670,14 @@ export default function AdminDashboard() {
                       <td className="p-4">
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-xs text-slate-700 font-bold">{user.userId}</span>
-                          <button type="button" onClick={() => {
-                            navigator.clipboard.writeText(user.userId);
-                            alert('User ID copied!');
-                          }}
-                            className="p-1 text-slate-400 hover:text-blue-600 transition-colors"
-                            title="Copy User ID"
+                          <a href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(user.email)}&su=${encodeURIComponent('TaskAI account details')}&body=${encodeURIComponent(`Your TaskAI User ID is: ${user.userId}`)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="p-2 text-slate-400 hover:text-blue-600 transition-colors"
+                            title="Open Gmail with user ID"
                           >
-                            <Copy size={14} />
-                          </button>
+                            <Mail size={18} />
+                          </a>
                         </div>
                       </td>
                       <td className="p-4">
@@ -689,9 +695,11 @@ export default function AdminDashboard() {
                       </td>
                       <td className="p-4 font-mono text-sm text-blue-600">{user.activeTasksCount}</td>
                       <td className="p-4">
-                        <button onClick={() => deleteDoc(doc(db, 'users', user.uid))} className="p-2 text-slate-400 hover:text-red-600 transition-colors">
-                          <Trash2 size={18} />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => deleteDoc(doc(db, 'users', user.uid))} className="p-2 text-slate-400 hover:text-red-600 transition-colors" title="Delete user">
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -723,7 +731,7 @@ export default function AdminDashboard() {
                     <option value="High">High</option>
                   </select>
                 </div>
-                <Input label="Deadline" type="date" value={newTask.deadline} onChange={v => setNewTask({ ...newTask, deadline: v })} />
+                <Input label="Deadline" type="date" min={minimumDeadline} value={newTask.deadline} onChange={v => setNewTask({ ...newTask, deadline: v })} />
               </div>
               <button onClick={handleAiBreakdown}
                 disabled={loading || !newTask.title || !newTask.description}
@@ -900,11 +908,11 @@ function SidebarItem({ icon, label, active, onClick }: { icon: React.ReactNode, 
   );
 }
 
-function Input({ label, type = "text", value, onChange, placeholder }: { label: string, type?: string, value: string, onChange: (v: string) => void, placeholder?: string }) {
+function Input({ label, type = "text", value, onChange, placeholder, min }: { label: string, type?: string, value: string, onChange: (v: string) => void, placeholder?: string, min?: string }) {
   return (
     <div className="space-y-2">
       <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">{label}</label>
-      <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+      <input type={type} value={value} min={min} onChange={e => onChange(e.target.value)} placeholder={placeholder}
         className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm text-slate-900"
       />
     </div>
@@ -934,7 +942,7 @@ const TaskCard = ({ task, onDelete, onDeleteSubTask }: TaskCardProps) => {
 
       // ✅ derive status
       const newStatus = getTaskStatusFromSubtasks(subs);
-      
+
       // ✅ update only if changed (prevents loop)
       if (newStatus !== task.status) {
         await updateDoc(doc(db, 'tasks', task.id), {
@@ -975,7 +983,7 @@ const TaskCard = ({ task, onDelete, onDeleteSubTask }: TaskCardProps) => {
             <span className="flex items-center gap-1"><Clock size={14} /> Due: {new Date(task.deadline).toLocaleDateString('en-GB').replace(/\//g, '-')}</span>
             {taskReminderDue && (
               <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-1 text-red-700">
-                 Reminder overdue by {overdueDays} day{overdueDays === 1 ? '' : 's'}
+                Reminder overdue by {overdueDays} day{overdueDays === 1 ? '' : 's'}
               </span>
             )}
             <span className="flex items-center gap-1">{task.status === 'done' ? <CheckCircle2 size={17} className="text-emerald-500" /> :
