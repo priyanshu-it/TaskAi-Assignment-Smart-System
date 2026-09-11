@@ -1,4 +1,4 @@
-# TaskAI Assignment Smart System
+# Task-AI Assignment Smart System
 
 TaskAI is a real-time team task management system for assigning work based on team roles and skills. Admins create users and high-level tasks, API suggests a breakdown into subtasks, and team members update the status of their assigned work. 
 
