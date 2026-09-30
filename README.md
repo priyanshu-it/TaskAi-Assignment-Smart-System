@@ -127,14 +127,6 @@ npm run dev
 
 The server listens on `0.0.0.0:3000`. Set the hosting platform's start command to `npm run dev` and provide `NODE_ENV=production` and `API_API_KEY`.
 
-## Security Notes
-
-- Firebase web configuration is intentionally present in `firebase-applet-config.json`; access control must be enforced by Firebase Authentication and Firestore rules.
-- The current demo has hard-coded admin email exceptions in the client and Firestore rules. Align these with your real admin provisioning model before deployment.
-- The current user onboarding uses the shared password `password123`. Replace it before production.
-- The API key is injected into the browser bundle by the current Vite configuration. Use a server-side API endpoint for production secrets.
-- Restrict Firebase Authentication authorized domains and review the rules in `firestore.rules` before exposing the app publicly.
-
 ## Project Structure
 
 ```text
