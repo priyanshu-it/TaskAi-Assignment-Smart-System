@@ -122,7 +122,7 @@ export default function AdminDashboardLayout({
             onClick={onExportReport}
             className="mb-4 px-4 py-2 hover:underline hover:text-blue-600 bg-blue-100 rounded-lg text-sm font-bold transition-all flex items-center gap-2 right-8 top-18 absolute cursor-pointer z-10"
           >
-            <BarChart3 size={16} /> Report
+             <BarChart3 size={16} /> All Reports
           </button>
         )}
         {children}
