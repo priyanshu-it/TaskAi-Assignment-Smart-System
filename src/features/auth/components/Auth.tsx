@@ -99,7 +99,7 @@ export default function Auth() {
           }
         }
       } else {
-        setError('No registered user found with these credentials. Please contact Admin.');
+        setError('No registered. Please contact Admin.');
       }
     } catch (err: any) {
       console.error('Login error:', err);
@@ -120,8 +120,8 @@ export default function Auth() {
         {/* your content */}
 
         <div className="mb-8 text-center">
-          <h1 className="text-4xl font-black text-blue-600 tracking-tighter mb-2 font-display">TASK-AI</h1>
-          <p className="text-slate-500 font-medium uppercase tracking-widest text-xs">Assignment Smart Portal</p>
+          <h1 className="text-5xl font-black text-blue-500 tracking-tighter mb-2 font-display">TASK-AI</h1>
+          <p className="text-slate-500 font-medium uppercase tracking-widest text-sm">Assignment Smart System</p>
         </div>
 
         <div className="w-full max-w-md bg-white rounded-3xl shadow-xl shadow-blue-100/50 border border-slate-400 overflow-hidden">
@@ -163,7 +163,7 @@ export default function Auth() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="admin@example.com"
-                        className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                        className="w-full pl-11 pr-18 py-4 bg-slate-50 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                         required
                       />
                     </div>
@@ -177,7 +177,7 @@ export default function Auth() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                        className="w-full pl-11 pr-18 py-4 bg-slate-50 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                         required
                       />
                     </div>
@@ -194,7 +194,7 @@ export default function Auth() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="your@email.com"
-                        className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                        className="w-full pl-11 pr-18 py-4 bg-slate-50 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                         required
                       />
                     </div>
@@ -208,7 +208,7 @@ export default function Auth() {
                         value={userId}
                         onChange={(e) => setUserId(e.target.value)}
                         placeholder="Enter your User ID"
-                        className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                        className="w-full pl-11 pr-18 py-4 bg-slate-50 border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                         required
                       />
                     </div>
