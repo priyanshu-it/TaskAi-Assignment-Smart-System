@@ -78,7 +78,7 @@ export default function AdminDashboardLayout({
       )}
 
       <aside className={cn(
-        "fixed inset-y-0 left-0 w-64 border-r border-slate-200 bg-white flex flex-col z-50 transition-transform duration-300 lg:relative lg:translate-x-0",
+        "fixed inset-y-0 left-0 w-64 border-r border-slate-200 bg-white flex flex-col z-50 transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:translate-x-0",
         isSidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="p-6 border-b border-slate-200 hidden lg:block">
@@ -102,7 +102,7 @@ export default function AdminDashboardLayout({
           <SidebarItem icon={<Pause size={20} />} label="Hold Status" active={activeTab === 'hold-status'} onClick={() => { onTabChange('hold-status'); onCloseSidebar(); }} />
         </nav>
 
-        <div className="p-4 border-t border-slate-200">
+        <div className="mt-auto p-4 border-t border-slate-200">
           <button
             onClick={() => auth.signOut()}
             className="w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all font-medium"
