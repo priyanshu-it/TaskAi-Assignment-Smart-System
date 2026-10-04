@@ -38,5 +38,10 @@ export async function breakdownTask(title: string, description: string, availabl
     }
   });
 
-  return JSON.parse(response.text);
+  const responseText = response.text;
+  if (!responseText) {
+    throw new Error("No content generated for task breakdown.");
+  }
+
+  return JSON.parse(responseText);
 }
