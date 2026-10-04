@@ -1,4 +1,4 @@
-import { Role } from "./types";
+import type { Role } from "../types";
 
 export const ROLE_SLOTS: Record<Exclude<Role, "Admin">, number> = {
   "Front-End Developer": 5,

@@ -25,7 +25,7 @@ export interface UserProfile {
   activeTasksCount: number;
 }
 
-export type TaskStatus = "pending" | "inprogress" | "done";
+export type TaskStatus = "pending" | "inprogress" | "done" | "hold";
 export type SubTaskStatus = "pending" | "inprogress" | "hold" | "done";
 export type Priority = "Low" | "Medium" | "High";
 

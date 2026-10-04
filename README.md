@@ -26,6 +26,28 @@ TaskAI is a real-time team task management system for assigning work based on te
 - Express and `tsx` for the local and production server
 - Lucide React, Motion, and Recharts
 
+## Project Structure
+
+The source is organized by application layer and business feature:
+
+```text
+src/
+  app/                  # Application composition and top-level providers
+  features/
+    auth/               # Sign-in UI and authentication context
+    admin-dashboard/    # Admin pages, dashboard components, and data hook
+    user-dashboard/     # Team-member pages and dashboard components
+  shared/
+    constants/          # Role and skill definitions
+    infrastructure/     # Firebase setup and AI task-breakdown integration
+    lib/                # Shared utilities
+    types/              # Shared domain types
+  main.tsx              # Browser entry point
+  index.css             # Global styles
+```
+
+Keep feature-specific UI and behavior inside its feature folder. Put code in `shared/` only when it is reused across features or represents an application-wide integration or domain definition.
+
 ## Prerequisites
 
 - Node.js 18 or newer

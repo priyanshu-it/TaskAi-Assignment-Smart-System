@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth, db } from '../firebase';
+import { auth, db } from '../../../shared/infrastructure/firebase';
 import { doc, setDoc, getDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { Shield, User as UserIcon, Mail, Lock, Loader2 } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { cn } from '../../../shared/lib/utils';
 
 export default function Auth() {
   const [isAdmin, setIsAdmin] = useState(true);

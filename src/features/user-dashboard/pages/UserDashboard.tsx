@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { collection, onSnapshot, query, where, doc, updateDoc, getDocs, collectionGroup, increment } from 'firebase/firestore';
-import { db, auth } from '../firebase';
-import { useAuth } from '../contexts/AuthContext';
-import { SubTask, SubTaskStatus } from '../types';
+import { db, auth } from '../../../shared/infrastructure/firebase';
+import { useAuth } from '../../auth/context/AuthContext';
+import type { SubTask, SubTaskStatus } from '../../../shared/types';
 import { ListChecks, PieChart, Clock, CheckCircle2, LogOut, User as UserIcon, LayoutDashboard, Loader2, AlertCircle, Menu, X } from 'lucide-react';
-import { cn, getDaysPastDeadline, isReminderDue } from '../lib/utils';
+import { cn, getDaysPastDeadline, isReminderDue } from '../../../shared/lib/utils';
+import SidebarItem from '../components/SidebarItem';
+import SubtaskCard from '../components/SubtaskCard';
+import TaskDetailsPanel from '../components/TaskDetailsPanel';
+import ProfilePanel from '../components/ProfilePanel';
 
 export default function UserDashboard() {
   const { profile } = useAuth();
@@ -256,90 +260,9 @@ export default function UserDashboard() {
 
             {userSubtasks.length > 0 ? (
               <div className="space-y-4">
-                {userSubtasks.map(sub => {
-                  const statusConfig = {
-                    pending: { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', dot: 'bg-orange-500', label: 'Pending' },
-                    inprogress: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', dot: 'bg-blue-500', label: 'In Progress' },
-                    hold: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', dot: 'bg-red-500', label: 'On Hold' },
-                    done: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', dot: 'bg-emerald-500', label: 'Completed' }
-                  };
-                  const config = statusConfig[sub.status];
-                  const overdueDays = sub.deadline ? getDaysPastDeadline(sub.deadline) ?? 0 : 0;
-                  const reminderDue = sub.deadline && sub.status !== 'done' && isReminderDue(sub.deadline);
-
-                  return (
-                    <div key={sub.id} className={cn("border rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm hover:shadow-md transition-all", config.bg, config.border, "bg-white border-slate-200")}>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[11px] font-bold uppercase tracking-wider">
-                            Project: {sub.parentTaskTitle}
-                          </span>
-                        </div>
-                        <h3 className="text-lg font-bold text-slate-900 mb-1">{sub.title}</h3>
-                        <p className="text-sm text-slate-600 mb-4">{sub.description}</p>
-
-                        <div className="flex items-center gap-1 px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg mb-3">
-                          <UserIcon size={14} className="text-slate-400" />
-                          <span className="text-xs font-medium text-slate-600">{sub.assignedToName}</span>
-                          <br />
-                          {sub.deadline && (
-                            <><Clock size={14} className="text-blue-400" />
-                              <span className="text-xs font-medium text-slate-500">
-                                {new Date(sub.deadline).toLocaleDateString('en-GB').replace(/\//g, '-')}
-                              </span>
-                            </>
-                          )}
-                        </div>
-
-                        {reminderDue && (
-                          <div className="mt-3 mb-3 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 text-red-700 text-[11px] font-semibold">
-                            <AlertCircle size={14} /> Reminder overdue by {overdueDays} day{overdueDays === 1 ? '' : 's'}
-                          </div>
-                        )}
-
-                        <div className="flex flex-wrap gap-2">
-                          {sub.skillsRequired.map(s => (
-                            <span key={s} className="px-2 py-1 bg-blue-50 text-blue-600 rounded-md text-[10px] font-bold uppercase tracking-wider">{s}</span>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-4">
-                        <div className="flex flex-col gap-1">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Status</label>
-                          <select value={sub.status}
-                            onChange={(e) => {
-                              const value = e.target.value as SubTaskStatus;
-                              if (value === "done") {
-                                const confirmed = window.confirm("Mark this task as completed?");
-                                if (!confirmed) return;
-                              }
-                              updateStatus(sub, value);
-                            }}
-                            className={cn(
-                              "px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer outline-none focus:ring-2 focus:ring-blue-500/20",
-                              sub.status === 'done' ? "text-emerald-600 border-emerald-500/30 bg-emerald-50/30" :
-                                sub.status === 'inprogress' ? "text-blue-600 border-blue-500/30 bg-blue-50/30" :
-                                  sub.status === 'hold' ? "text-orange-600 border-orange-500/30 bg-orange-50/30" :
-                                    "text-slate-500"
-                            )}
-                          >
-                            {sub.status !== "done" ? (
-                              <>
-                                <option value="pending">Pending</option>
-                                <option value="inprogress">In Progress</option>
-                                <option value="hold">On Hold</option>
-                                <option value="done">Completed</option>
-                              </>
-                            ) : (
-                              <option value="done">"Completed"</option>
-                            )}
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                {userSubtasks.map(subtask => (
+                  <SubtaskCard key={subtask.id} subtask={subtask} onStatusChange={updateStatus} />
+                ))}
               </div>
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-slate-400 py-20">
@@ -349,126 +272,13 @@ export default function UserDashboard() {
             )}
           </>
         ) : activeTab === 'details' ? (
-          <div className="space-y-6">
-            <header className="mb-4">
-              <h1 className="text-2xl lg:text-3xl font-bold text-slate-900 mb-2 tracking-tight">Task Details</h1>
-              <p className="text-slate-600 text-sm font-medium">See the users handling your tasks and who owns each subtask.</p>
-            </header>
-
-            {taskDetails.length > 0 ? (
-              <div className="space-y-5">
-                {taskDetails.map(task => (
-                  <div key={task.taskId} className="bg-white border border-slate-300 border-left-8 border-l-blue-600 rounded-2xl p-6 shadow-sm">
-                    <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
-                      <div>
-                        <h2 className="text-xl font-bold text-blue-900 uppercase tracking-wider underline decoration-blue-900 decoration-2">{task.taskTitle}</h2>
-                        <p className="text-sm text-slate-500 mt-2">Users handling this task: </p>
-                      </div>
-                      <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 text-xs font-bold uppercase tracking-wider text-blue-700">
-                        {task.subtasks.length} Subtask{task.subtasks.length === 1 ? '' : 's'}
-                      </div>
-                    </div>
-
-                    <div className="mt-6 space-y-4">
-                      {task.subtasks.map(sub => (
-                        <div key={sub.id} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                            <div>
-                              <h3 className="text-lg font-semibold text-slate-900">{sub.title}</h3>
-                              <p className="text-sm text-slate-600 mt-1">{sub.description}</p>
-                            </div>
-                            <div className="text-sm text-slate-600">
-                              Assigned to: <span className="font-semibold text-slate-900">{sub.assignedToName || sub.assignedTo}</span>
-                            </div>
-                          </div>
-
-                          <div className="mt-4 flex flex-wrap gap-3 text-xs text-slate-500">
-                            <div className="px-3 py-2 bg-white rounded-full border border-slate-200">Status: <span className="font-semibold text-slate-700">{sub.status}</span></div>
-                            {sub.deadline && (
-                              <div className="px-3 py-2 bg-white rounded-full border border-slate-200">Due: <span className="font-semibold text-slate-700">{new Date(sub.deadline).toLocaleDateString('en-GB').replace(/\//g, '-')}</span></div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-slate-400 py-20">
-                <AlertCircle size={48} className="mb-4 opacity-20" />
-                <p className="text-sm font-medium">There are no task details to display yet.</p>
-              </div>
-            )}
-          </div>
+          <TaskDetailsPanel taskDetails={taskDetails} />
         ) : (
-          <div className="max-w-2xl mx-auto space-y-8">
-            <header className="mb-8">
-              <h1 className="text-3xl font-bold text-slate-900 mb-2 tracking-tight">Profile Settings</h1>
-              <p className="text-slate-600 text-sm font-medium">Manage your professional information</p>
-            </header>
-
-            <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm space-y-8">
-              <div className="flex items-center gap-6">
-                <div className="w-20 h-20 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
-                  <UserIcon size={40} />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-slate-900">{profile?.fullName}</h2>
-                  <p className="text-slate-500 font-medium">{profile?.role}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Email Address</label>
-                  <div className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-600 font-medium">
-                    {profile?.email}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">User ID</label>
-                  <div className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-600 font-medium">
-                    {profile?.userId}
-                  </div>
-                </div>
-              </div>
-
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Professional Role</label>
-              <div className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-blue-900 rounded-xl text-xs font-bold uppercase">
-                {profile?.role}
-              </div>
-
-              <div className="space-y-4">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">My Skills</label>
-                <div className="flex flex-wrap gap-2">
-                  {profile?.skills.map(skill => (
-                    <span key={skill} className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl text-xs font-bold border border-blue-100">
-                      {skill}
-                    </span>
-                  ))}
-
-                </div>
-              </div>
-              <span className="text-state-100 text-blue-300 flex items-center justify-center">* Please capture a photo, open your device's camera app</span>
-            </div>
-          </div>
+          <ProfilePanel profile={profile} />
         )}
 
       </main>
     </div>
-  );
-}
-
-function SidebarItem({ icon, label, active, onClick }: { icon: React.ReactNode, label: string, active: boolean, onClick: () => void }) {
-  return (
-    <button onClick={onClick} className={cn(
-      "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm",
-      active ? "bg-blue-50 text-blue-600" : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
-    )}
-    > {icon}
-      {label}
-    </button>
   );
 }
 

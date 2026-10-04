@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import Auth from './components/Auth';
-import AdminDashboard from './components/AdminDashboard';
-import UserDashboard from './components/UserDashboard';
+import { AuthProvider, useAuth } from '../features/auth/context/AuthContext';
+import Auth from '../features/auth/components/Auth';
+import AdminDashboard from '../features/admin-dashboard/pages/AdminDashboard';
+import UserDashboard from '../features/user-dashboard/pages/UserDashboard';
 import { Loader2 } from 'lucide-react';
 
 function AppContent() {
@@ -34,4 +34,3 @@ export default function App() {
     </AuthProvider>
   );
 }
-
