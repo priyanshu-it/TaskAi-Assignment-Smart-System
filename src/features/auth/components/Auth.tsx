@@ -129,7 +129,7 @@ export default function Auth() {
             <button
               onClick={() => setIsAdmin(true)}
               className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-all",
+                "flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-all cursor-pointer",
                 isAdmin ? "bg-blue-50 shadow-sm text-blue-600" : "text-slate-500 hover:text-slate-700"
               )}
             >
@@ -139,7 +139,7 @@ export default function Auth() {
             <button
               onClick={() => setIsAdmin(false)}
               className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-all",
+                "flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-all cursor-pointer",
                 !isAdmin ? "bg-blue-50 shadow-sm text-blue-600" : "text-slate-500 hover:text-slate-700"
               )}
             >
