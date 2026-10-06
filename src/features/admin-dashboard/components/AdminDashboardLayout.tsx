@@ -97,7 +97,7 @@ export default function AdminDashboardLayout({
         <nav className="flex-1 p-4 space-y-2 lg:mt-0 mt-16">
           <SidebarItem icon={<LayoutDashboard size={20} />} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => { onTabChange('dashboard'); onCloseSidebar(); }} />
           <SidebarItem icon={<Users size={20} />} label="Create User's" active={activeTab === 'users'} onClick={() => { onTabChange('users'); onCloseSidebar(); }} />
-          <SidebarItem icon={<Plus size={20} />} label="Create Task AI" active={activeTab === 'create-task'} onClick={() => { onTabChange('create-task'); onCloseSidebar(); }} />
+          <SidebarItem icon={<Plus size={20} />} label="Create Task" active={activeTab === 'create-task'} onClick={() => { onTabChange('create-task'); onCloseSidebar(); }} />
           <SidebarItem icon={<ListChecks size={20} />} label="Tasks Status" active={activeTab === 'all-tasks'} onClick={() => { onTabChange('all-tasks'); onCloseSidebar(); }} />
           <SidebarItem icon={<Pause size={20} />} label="Hold Status" active={activeTab === 'hold-status'} onClick={() => { onTabChange('hold-status'); onCloseSidebar(); }} />
         </nav>

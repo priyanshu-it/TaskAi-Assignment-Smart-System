@@ -17,7 +17,8 @@ export default function SidebarItem({ icon, label, active, onClick }: SidebarIte
         active ? "bg-blue-50 text-blue-600" : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
       )}
     >
-      {icon} {label}
+      {icon} {label} {label === 'Create Task' && <span className="ml-1 text-xs font-bold text-slate-500 uppercase tracking-wider border border-slate-200 px-1 py-0.5 rounded-lg">
+        AI</span>}
     </button>
   );
 }
