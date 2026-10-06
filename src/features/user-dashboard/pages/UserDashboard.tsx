@@ -16,10 +16,16 @@ export default function UserDashboard() {
   const [allSubtasks, setAllSubtasks] = useState<SubTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [completionFilter, setCompletionFilter] = useState<'all' | 'done' | 'not-done'>('all');
 
   const [activeTab, setActiveTab] = useState<'tasks' | 'details' | 'profile'>('tasks');
 
   const overdueReminders = userSubtasks.filter(sub => sub.deadline && sub.status !== 'done' && isReminderDue(sub.deadline));
+  const visibleSubtasks = userSubtasks.filter(subtask => {
+    if (completionFilter === 'done') return subtask.status === 'done';
+    if (completionFilter === 'not-done') return subtask.status !== 'done';
+    return true;
+  });
 
   useEffect(() => {
     if (!profile?.email) {
@@ -259,11 +265,34 @@ export default function UserDashboard() {
             </div>
 
             {userSubtasks.length > 0 ? (
-              <div className="space-y-4">
-                {userSubtasks.map(subtask => (
-                  <SubtaskCard key={subtask.id} subtask={subtask} onStatusChange={updateStatus} />
-                ))}
-              </div>
+              <>
+                <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+                  <label htmlFor="completion-filter" className="text-sm font-medium text-slate-600">
+                    Show tasks
+                  </label>
+                  <select
+                    id="completion-filter"
+                    value={completionFilter}
+                    onChange={event => setCompletionFilter(event.target.value as typeof completionFilter)}
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  >
+                    <option value="all">All tasks</option>
+                    <option value="done">Done</option>
+                    <option value="not-done">Not done</option>
+                  </select>
+                </div>
+                {visibleSubtasks.length > 0 ? (
+                  <div className="space-y-4">
+                    {visibleSubtasks.map(subtask => (
+                      <SubtaskCard key={subtask.id} subtask={subtask} onStatusChange={updateStatus} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
+                    No {completionFilter === 'done' ? 'completed' : 'unfinished'} tasks.
+                  </div>
+                )}
+              </>
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-slate-400 py-20">
                 <AlertCircle size={48} className="mb-4 opacity-20" />
