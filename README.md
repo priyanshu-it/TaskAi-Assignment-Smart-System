@@ -179,5 +179,6 @@ PS C:\Users\user\Downloads\AI Project 2026\TaskAi-Assignment-Smart-System> git a
 PS C:\Users\user\Downloads\AI Project 2026\TaskAi-Assignment-Smart-System> git commit -m "Initial commit"
 [main ecda375] Initial commit
  3 files changed, 3 insertions(+), 3 deletions(-)
-PS C:\Users\user\Downloads\AI Project 2026\TaskAi-Assignment-Smart-System> 
+PS C:\Users\user\Downloads\AI Project 2026\TaskAi-Assignment-Smart-System> git Push
+Github update!
 ```
