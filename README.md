@@ -169,10 +169,10 @@ The server listens on `0.0.0.0:3000`. Set the hosting platform's start command t
     ├── types.ts
     └── constants.ts
 ```
+
 ## GIT UPDATE 
 ```text
-.
-PS C:\Users\user\Downloads\AI Project 2026\TaskAi-Assignment-Smart-System> 
+
 PS C:\Users\user\Downloads\AI Project 2026\TaskAi-Assignment-Smart-System> git init                      
 Reinitialized existing Git repository in C:/Users/user/Downloads/AI Project 2026/TaskAi-Assignment-Smart-System/.git/
 PS C:\Users\user\Downloads\AI Project 2026\TaskAi-Assignment-Smart-System> git add .                     
@@ -181,4 +181,5 @@ PS C:\Users\user\Downloads\AI Project 2026\TaskAi-Assignment-Smart-System> git c
  3 files changed, 3 insertions(+), 3 deletions(-)
 PS C:\Users\user\Downloads\AI Project 2026\TaskAi-Assignment-Smart-System> git Push
 Github update!
+
 ```
