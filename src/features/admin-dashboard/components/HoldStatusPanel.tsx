@@ -15,7 +15,7 @@ export default function HoldStatusPanel({ users, subtasks }: HoldStatusPanelProp
       <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-sm">
         <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
-            <tr className="bg-slate-50 text-center">
+            <tr className="bg-slate-100 text-center border-b border-slate-200">
               <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">User Details</th>
               <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Hold Tasks</th>
               <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Task Details</th>

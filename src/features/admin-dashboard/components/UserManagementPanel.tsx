@@ -118,7 +118,7 @@ export default function UserManagementPanel({
       <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-sm">
         <table className="w-full text-left border-collapse min-w-[600px]">
           <thead>
-            <tr className="bg-slate-50">
+            <tr className="bg-slate-100 border-b border-slate-300">
               <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">User</th>
               <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">User ID</th>
               <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Role</th>

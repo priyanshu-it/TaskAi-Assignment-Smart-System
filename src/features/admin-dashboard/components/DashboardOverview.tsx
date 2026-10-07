@@ -122,7 +122,7 @@ export default function DashboardOverview({
             >
               <table className="w-full text-left border-collapse min-w-[600px]">
                 <thead>
-                  <tr className="sticky top-0 z-10 bg-slate-50">
+                  <tr className="sticky top-0 z-10 bg-slate-100 border-b border-slate-300">
                     <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Member</th>
                     <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Role</th>
                     <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Load</th>
