@@ -216,6 +216,14 @@ export default function Auth() {
                 </>
               )}
 
+              <button
+                type="button"
+                onClick={() => window.alert('Please contact the Admin team to reset your password or user ID.')}
+                className="text-blue-500 text-xs font-medium hover:underline transition-all self-end"
+              >
+                Forgot Password?
+              </button>
+
               {error && <p className="text-red-500 text-xs font-medium bg-red-50 p-3 rounded-xl border border-red-100">{error}</p>}
 
               <button
